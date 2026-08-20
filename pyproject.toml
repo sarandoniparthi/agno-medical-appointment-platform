@@ -1,0 +1,51 @@
+[project]
+name = "runtime-foundation"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "agno>=2.9.0",
+    "boto3>=1.43.76",
+    "fastapi>=0.141.1",
+    "grpcio>=1.83.0",
+    "protobuf>=7.36.0",
+    "psycopg>=3.3.4",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy>=2.0.52",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.83.0",
+    "httpx>=0.28.1",
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["python/agno_platform"]
+
+[tool.pytest.ini_options]
+pythonpath = ["python"]
+testpaths = ["python/tests", "apps/agent-runtime/tests", "apps/mcp-gateway/tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["python", "apps/agent-runtime", "apps/mcp-gateway"]
+typeCheckingMode = "strict"

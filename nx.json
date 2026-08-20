@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "main",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": ["default", "!{projectRoot}/**/*.spec.*", "!{projectRoot}/**/*.test.*"],
+    "sharedGlobals": ["{workspaceRoot}/package-lock.json", "{workspaceRoot}/uv.lock"]
+  },
+  "targetDefaults": {
+    "test": { "cache": true, "inputs": ["default", "^production"] },
+    "build": { "cache": true, "inputs": ["production", "^production"] },
+    "lint": { "cache": true, "inputs": ["default", "^default"] }
+  }
+}

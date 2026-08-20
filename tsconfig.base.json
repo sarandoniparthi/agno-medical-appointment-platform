@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "composite": false,
+    "declarationMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noUncheckedIndexedAccess": true,
+    "strict": true,
+    "target": "ES2023"
+  }
+}
