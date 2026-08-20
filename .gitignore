@@ -1,5 +1,6 @@
 # Local brainstorming companion
 .superpowers/
+.worktrees/
 
 # Dependencies and generated output
 node_modules/
