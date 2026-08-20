@@ -11,6 +11,12 @@
     "moduleResolution": "Bundler",
     "noUncheckedIndexedAccess": true,
     "strict": true,
-    "target": "ES2023"
+    "target": "ES2023",
+    "paths": {
+      "@scheduler/contracts": ["./libs/contracts/src/index.ts"],
+      "@scheduler/ui": ["./libs/ui/src/index.ts"],
+      "@scheduler/auth": ["./libs/auth/src/index.ts"],
+      "@scheduler/observability": ["./libs/observability/src/index.ts"]
+    }
   }
 }
