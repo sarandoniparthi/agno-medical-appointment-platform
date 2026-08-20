@@ -35,6 +35,7 @@ packages = ["python/agno_platform"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
+filterwarnings = ["error"]
 pythonpath = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 testpaths = ["python/tests", "apps/agent-runtime/tests", "apps/mcp-gateway/tests"]
 asyncio_mode = "auto"
@@ -50,6 +51,5 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 [tool.pyright]
 pythonVersion = "3.12"
 include = ["python", "apps/agent-runtime", "apps/mcp-gateway"]
-exclude = ["**/tests"]
 extraPaths = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 typeCheckingMode = "strict"

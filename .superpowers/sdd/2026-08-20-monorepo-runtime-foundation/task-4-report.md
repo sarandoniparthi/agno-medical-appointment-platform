@@ -41,8 +41,44 @@ also passed.
 
 The endpoints use literal-constrained Pydantic v2 response models and match the
 specified payloads exactly. No existing TypeScript application files were
-altered. Test execution emits the existing FastAPI/Starlette `TestClient`
-deprecation warning, and Nx emits unrelated Vite configuration and NO_COLOR
-warnings; none fail the required targets. Nx also flags the two lint targets as
-flaky even though the uncached run succeeded; this appears to be Nx cache
-heuristic noise and is recorded for future infrastructure hardening.
+altered. The initial implementation emitted a FastAPI/Starlette `TestClient`
+deprecation warning; Fix round 1 replaces that client and makes warnings test
+failures. Nx's unrelated Vite configuration and NO_COLOR warnings remain
+non-blocking.
+
+## Fix round 1: strict test typing and warning-free HTTPX tests
+
+Both P1 findings were addressed without changing dependencies.
+
+- Removed Pyright's blanket `exclude = ["**/tests"]`; strict Pyright now
+  analyzes both health tests and reports 0 errors and 0 warnings.
+- Replaced deprecated FastAPI/Starlette `TestClient` usage with typed
+  `httpx.AsyncClient` and `ASGITransport` requests against each FastAPI app.
+- Added pytest `filterwarnings = ["error"]`, making future warnings test
+  failures rather than non-blocking output.
+
+### RED/GREEN evidence
+
+- RED: after enabling warnings-as-errors, the focused test command failed at
+  collection with `StarletteDeprecationWarning` raised by the old `TestClient`
+  import. This demonstrated the policy catches the deprecated dependency path.
+- GREEN: after migrating both tests to async HTTPX transports, the same focused
+  command passed cleanly with `2 passed in 0.53s` and no warnings.
+
+### Fix verification
+
+```powershell
+npm.cmd exec nx -- run-many -t test,lint,typecheck --projects=agent-runtime,mcp-gateway --skip-nx-cache
+```
+
+All six targets passed uncached: both pytest targets passed with no warnings,
+both Ruff targets passed, and both strict Pyright targets reported 0 errors,
+0 warnings, and 0 information messages. `git diff --check` passed.
+
+### Fix commit and concerns
+
+`fix: use strict warning-free async health tests`
+
+The only remaining command output is unrelated Vite configuration and Node
+NO_COLOR warnings emitted by Nx; the focused Python suites are warning-free
+under the enforced pytest policy.
