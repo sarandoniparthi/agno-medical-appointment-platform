@@ -1,0 +1,26 @@
+{
+  "name": "mcp-gateway",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/mcp-gateway/src",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run uvicorn mcp_gateway.main:app --app-dir apps/mcp-gateway/src --host 0.0.0.0 --port 8010"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "uv run pytest apps/mcp-gateway/tests -q" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": { "command": "uv run ruff check apps/mcp-gateway" }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": { "command": "uv run pyright apps/mcp-gateway" }
+    }
+  }
+}

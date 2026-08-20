@@ -1,0 +1,26 @@
+{
+  "name": "agent-runtime",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/agent-runtime/src",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run uvicorn agent_runtime.main:app --app-dir apps/agent-runtime/src --host 0.0.0.0 --port 8000"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "uv run pytest apps/agent-runtime/tests -q" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": { "command": "uv run ruff check apps/agent-runtime" }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": { "command": "uv run pyright apps/agent-runtime" }
+    }
+  }
+}

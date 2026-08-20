@@ -34,13 +34,15 @@ build-backend = "hatchling.build"
 packages = ["python/agno_platform"]
 
 [tool.pytest.ini_options]
-pythonpath = ["python"]
+addopts = "--import-mode=importlib"
+pythonpath = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 testpaths = ["python/tests", "apps/agent-runtime/tests", "apps/mcp-gateway/tests"]
 asyncio_mode = "auto"
 
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+src = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
@@ -48,4 +50,6 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 [tool.pyright]
 pythonVersion = "3.12"
 include = ["python", "apps/agent-runtime", "apps/mcp-gateway"]
+exclude = ["**/tests"]
+extraPaths = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 typeCheckingMode = "strict"
