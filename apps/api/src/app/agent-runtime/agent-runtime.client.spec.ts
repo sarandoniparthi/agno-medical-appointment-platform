@@ -1,12 +1,23 @@
 import { status as GrpcStatus } from '@grpc/grpc-js';
+import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   AgentRuntimeClient,
   AgentRuntimeUnavailableError,
+  resolveAgentRuntimeProtoPath,
   type RawAgentRuntimeGrpcClient,
 } from './agent-runtime.client';
 
 describe('AgentRuntimeClient', () => {
+  it('resolves the proto from an explicit compiled runtime directory', () => {
+    expect(resolveAgentRuntimeProtoPath('/deployment/api')).toBe(
+      resolve(
+        '/deployment/api',
+        'proto/agent_runtime/v1/agent_runtime.proto',
+      ),
+    );
+  });
+
   it('maps a serving gRPC health response to the public health contract', async () => {
     const rawClient: RawAgentRuntimeGrpcClient = {
       CheckHealth: (_request, _options, callback) =>

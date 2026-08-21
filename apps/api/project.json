@@ -10,6 +10,12 @@
         "command": "vitest --config apps/api/vite.config.ts"
       }
     },
+    "test-artifact": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/verify-api-grpc-artifact.mjs"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {

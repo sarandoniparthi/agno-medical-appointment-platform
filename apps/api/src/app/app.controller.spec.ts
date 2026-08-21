@@ -44,6 +44,38 @@ describe('AppController', () => {
     });
   });
 
+  it('trims a supplied readiness correlation ID before forwarding it', async () => {
+    const controller = new AppController(
+      new AppService(),
+      runtimeClientRespondingWith({
+        service: 'agent-runtime',
+        status: 1,
+        correlation_id: 'trimmed-123',
+      }),
+    );
+
+    await expect(controller.ready('  trimmed-123  ')).resolves.toMatchObject({
+      correlationId: 'trimmed-123',
+    });
+  });
+
+  it('replaces an oversized readiness correlation ID', async () => {
+    const controller = new AppController(
+      new AppService(),
+      runtimeClientRespondingWith({
+        service: 'agent-runtime',
+        status: 1,
+        correlation_id: 'generated',
+      }),
+    );
+
+    await expect(controller.ready('x'.repeat(129))).resolves.toMatchObject({
+      correlationId: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      ),
+    });
+  });
+
   it('returns a non-sensitive 503 code when the agent runtime is unavailable', async () => {
     const controller = new AppController(
       new AppService(),

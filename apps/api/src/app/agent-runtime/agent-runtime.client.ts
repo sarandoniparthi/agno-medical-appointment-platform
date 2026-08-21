@@ -8,6 +8,8 @@ export const AGENT_RUNTIME_GRPC_CLIENT = Symbol('AGENT_RUNTIME_GRPC_CLIENT');
 const HEALTH_CHECK_TIMEOUT_MS = 2_000;
 const SERVING_STATUS_SERVING = 1;
 const SERVING_STATUS_NOT_SERVING = 2;
+const AGENT_RUNTIME_PROTO_ASSET_PATH =
+  'proto/agent_runtime/v1/agent_runtime.proto';
 
 export type AgentRuntimeHealthStatus = 'serving' | 'not-serving' | 'unknown';
 
@@ -63,9 +65,17 @@ interface AgentRuntimeGrpcPackage {
   };
 }
 
-export function createAgentRuntimeGrpcClient(): RawAgentRuntimeGrpcClient {
+export function resolveAgentRuntimeProtoPath(
+  runtimeDirectory = __dirname,
+): string {
+  return resolve(runtimeDirectory, AGENT_RUNTIME_PROTO_ASSET_PATH);
+}
+
+export function createAgentRuntimeGrpcClient(
+  protoPath = resolveAgentRuntimeProtoPath(),
+): RawAgentRuntimeGrpcClient {
   const packageDefinition = protoLoader.loadSync(
-    resolve(process.cwd(), 'proto/agent_runtime/v1/agent_runtime.proto'),
+    protoPath,
     {
       keepCase: true,
       longs: String,

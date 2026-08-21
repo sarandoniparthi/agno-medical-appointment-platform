@@ -33,8 +33,10 @@ export class AppController {
     @Headers('x-correlation-id') correlationId?: string | string[],
   ): Promise<{ api: 'ok'; agentRuntime: 'serving'; correlationId: string }> {
     const requestCorrelationId =
-      typeof correlationId === 'string' && correlationId.length > 0
-        ? correlationId
+      typeof correlationId === 'string' &&
+      correlationId.trim().length > 0 &&
+      correlationId.trim().length <= 128
+        ? correlationId.trim()
         : randomUUID();
 
     try {
