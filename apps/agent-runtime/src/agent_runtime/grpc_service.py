@@ -1,7 +1,6 @@
 import grpc
 
-from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2
-from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2_grpc
+from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2, agent_runtime_pb2_grpc
 
 
 class AgentRuntimeService(agent_runtime_pb2_grpc.AgentRuntimeServiceServicer):

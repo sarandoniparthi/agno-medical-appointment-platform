@@ -4,7 +4,7 @@ import {
   Headers,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { correlationId } from '@scheduler/observability';
 import {
   AgentRuntimeClient,
   AgentRuntimeUnavailableError,
@@ -30,14 +30,9 @@ export class AppController {
 
   @Get('ready')
   async ready(
-    @Headers('x-correlation-id') correlationId?: string | string[],
+    @Headers('x-correlation-id') requestCorrelationHeader?: string | string[],
   ): Promise<{ api: 'ok'; agentRuntime: 'serving'; correlationId: string }> {
-    const requestCorrelationId =
-      typeof correlationId === 'string' &&
-      correlationId.trim().length > 0 &&
-      correlationId.trim().length <= 128
-        ? correlationId.trim()
-        : randomUUID();
+    const requestCorrelationId = correlationId(requestCorrelationHeader);
 
     try {
       const health = await this.agentRuntimeClient.checkHealth(requestCorrelationId);

@@ -1,13 +1,13 @@
 import argparse
 import asyncio
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import grpc
 
-from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2_grpc
 from agent_runtime.grpc_service import AgentRuntimeService
+from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2_grpc
 
 
 async def serve_grpc(host: str, port: int) -> None:

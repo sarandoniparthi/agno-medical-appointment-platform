@@ -39,3 +39,19 @@ def test_redact_mapping_recursively_redacts_sensitive_fields_without_mutation() 
     assert isinstance(attempts, list)
     assert metadata["password"] == "not-for-logs"
     assert attempts[1]["nested"]["apiToken"] == "api-token"
+
+
+def test_redact_mapping_normalizes_case_separators_and_unicode_like_typescript() -> None:
+    assert redact_mapping(
+        {
+            "API_ToKeN": "sensitive",
+            "patient-address": "sensitive",
+            "toéken": "sensitive",
+            "safe_id": "kept",
+        }
+    ) == {
+        "API_ToKeN": "[REDACTED]",
+        "patient-address": "[REDACTED]",
+        "toéken": "[REDACTED]",
+        "safe_id": "kept",
+    }

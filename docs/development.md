@@ -12,4 +12,6 @@ npm exec nx -- serve api
 npm exec nx -- serve web
 ```
 
+Run each long-running `serve` command in a separate terminal.
+
 `.env` is local-only and must not be committed. Bedrock uses the ambient AWS credential chain; do not place AWS credentials in `.env`. Select a model identifier that is available in the configured AWS Region before starting an AgentCore or Bedrock-backed workflow.

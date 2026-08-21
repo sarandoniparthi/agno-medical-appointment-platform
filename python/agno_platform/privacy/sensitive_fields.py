@@ -13,5 +13,7 @@ SENSITIVE_FIELD_KEY_FRAGMENTS = (
 
 
 def is_sensitive_field_key(key: str) -> bool:
-    normalized_key = "".join(character for character in key.lower() if character.isalnum())
+    normalized_key = "".join(
+        character for character in key.lower() if character.isascii() and character.isalnum()
+    )
     return any(fragment in normalized_key for fragment in SENSITIVE_FIELD_KEY_FRAGMENTS)

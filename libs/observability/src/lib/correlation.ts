@@ -1,16 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
-const safeCorrelationId = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const canonicalUuidV4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /**
- * Returns an authorization-safe correlation ID. Untrusted values are retained
- * only when they are short identifiers, never when they resemble header data.
+ * Returns an authorization-safe correlation ID. It retains only canonical UUID
+ * values, so request headers cannot be echoed or forwarded as credentials.
  */
 export function correlationId(value: unknown): string {
   if (typeof value === 'string') {
-    const trimmedValue = value.trim();
-    if (safeCorrelationId.test(trimmedValue)) {
-      return trimmedValue;
+    if (canonicalUuidV4.test(value)) {
+      return value;
     }
   }
 

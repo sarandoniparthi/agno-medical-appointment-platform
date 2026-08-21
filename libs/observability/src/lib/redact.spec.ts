@@ -36,4 +36,20 @@ describe('redactRecord', () => {
     expect(input.metadata.password).toBe('not-for-logs');
     expect(input.attempts[1]?.nested.apiToken).toBe('api-token');
   });
+
+  it('normalizes case, separators, and Unicode consistently with Python', () => {
+    expect(
+      redactRecord({
+        API_ToKeN: 'sensitive',
+        'patient-address': 'sensitive',
+        toéken: 'sensitive',
+        safe_id: 'kept',
+      }),
+    ).toEqual({
+      API_ToKeN: '[REDACTED]',
+      'patient-address': '[REDACTED]',
+      toéken: '[REDACTED]',
+      safe_id: 'kept',
+    });
+  });
 });

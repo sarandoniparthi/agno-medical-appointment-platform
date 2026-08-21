@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createTypeOrmOptions,
   PlatformSettingEntity,
-} from '@scheduler/database';
+} from './index';
 
 describe('@scheduler/database', () => {
   it('exports the safe runtime options and platform setting entity', () => {

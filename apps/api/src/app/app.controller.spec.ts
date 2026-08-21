@@ -37,26 +37,36 @@ describe('AppController', () => {
       }),
     );
 
-    await expect(controller.ready('ready-123')).resolves.toEqual({
+    await expect(controller.ready('0f8fad5b-d9cb-469f-a165-70867728950e')).resolves.toEqual({
       api: 'ok',
       agentRuntime: 'serving',
-      correlationId: 'ready-123',
+      correlationId: '0f8fad5b-d9cb-469f-a165-70867728950e',
     });
   });
 
-  it('trims a supplied readiness correlation ID before forwarding it', async () => {
+  it('replaces an unsafe readiness correlation ID before echoing or forwarding it', async () => {
+    let forwardedCorrelationId: string | undefined;
     const controller = new AppController(
       new AppService(),
-      runtimeClientRespondingWith({
+      runtimeClientCapturingRequest((correlationId) => {
+        forwardedCorrelationId = correlationId;
+      }, {
         service: 'agent-runtime',
         status: 1,
-        correlation_id: 'trimmed-123',
+        correlation_id: 'generated',
       }),
     );
 
-    await expect(controller.ready('  trimmed-123  ')).resolves.toMatchObject({
-      correlationId: 'trimmed-123',
+    const rawCredential = 'Bearer credential';
+    await expect(controller.ready(rawCredential)).resolves.toMatchObject({
+      correlationId: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      ),
     });
+    expect(forwardedCorrelationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(forwardedCorrelationId).not.toBe(rawCredential);
   });
 
   it('replaces an oversized readiness correlation ID', async () => {
@@ -85,10 +95,10 @@ describe('AppController', () => {
       }),
     );
 
-    await expect(controller.ready('offline-123')).rejects.toMatchObject({
+    await expect(controller.ready('0f8fad5b-d9cb-469f-a165-70867728950e')).rejects.toMatchObject({
       status: 503,
       response: {
-        correlationId: 'offline-123',
+        correlationId: '0f8fad5b-d9cb-469f-a165-70867728950e',
         errorCode: 'agent_runtime_unavailable',
       },
     });
@@ -102,6 +112,19 @@ function runtimeClientRespondingWith(response: {
 }): AgentRuntimeClient {
   return new AgentRuntimeClient({
     CheckHealth: (_request, _options, callback) => callback(null, response),
+    close: () => undefined,
+  });
+}
+
+function runtimeClientCapturingRequest(
+  onRequest: (correlationId: string) => void,
+  response: { service: string; status: number; correlation_id: string },
+): AgentRuntimeClient {
+  return new AgentRuntimeClient({
+    CheckHealth: (request, _options, callback) => {
+      onRequest(request.correlation_id);
+      callback(null, response);
+    },
     close: () => undefined,
   });
 }

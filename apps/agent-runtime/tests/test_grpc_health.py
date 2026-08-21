@@ -4,9 +4,8 @@ from typing import TYPE_CHECKING, cast
 import grpc
 import pytest_asyncio
 
-from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2
-from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2_grpc
 from agent_runtime.grpc_service import AgentRuntimeService
+from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2, agent_runtime_pb2_grpc
 
 if TYPE_CHECKING:
     from agno_platform.generated.agent_runtime.v1.agent_runtime_pb2_grpc import (
