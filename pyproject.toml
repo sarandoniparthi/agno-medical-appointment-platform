@@ -51,6 +51,5 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 [tool.pyright]
 pythonVersion = "3.12"
 include = ["python", "apps/agent-runtime", "apps/mcp-gateway"]
-ignore = ["python/agno_platform/generated"]
 extraPaths = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 typeCheckingMode = "strict"
