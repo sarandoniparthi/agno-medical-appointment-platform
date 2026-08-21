@@ -14,6 +14,15 @@
       "executor": "nx:run-commands",
       "options": { "command": "uv run pytest apps/agent-runtime/tests -q" }
     },
+    "bedrock-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run pytest python/tests/models/test_bedrock_live.py -q -m bedrock_live"
+      },
+      "metadata": {
+        "description": "Opt-in Bedrock inference smoke test; CI does not run this target by default."
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": { "command": "uv run ruff check apps/agent-runtime" }

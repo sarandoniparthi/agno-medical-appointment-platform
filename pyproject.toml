@@ -36,6 +36,7 @@ packages = ["python/agno_platform", "apps/agent-runtime/src/agent_runtime"]
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 filterwarnings = ["error"]
+markers = ["bedrock_live: opt-in test that invokes an AWS Bedrock model"]
 pythonpath = ["python", "apps/agent-runtime/src", "apps/mcp-gateway/src"]
 testpaths = ["python/tests", "apps/agent-runtime/tests", "apps/mcp-gateway/tests"]
 asyncio_mode = "auto"
