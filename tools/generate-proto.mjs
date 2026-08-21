@@ -20,8 +20,14 @@ const contract = {
   methodName: 'CheckHealth',
 };
 
-const outputRoot = resolve('python/agno_platform/generated');
-const stagingRoot = mkdtempSync(join(dirname(outputRoot), '.agent-runtime-proto-'));
+const outputRoot = resolve(
+  process.env.PROTO_GENERATE_OUTPUT_ROOT ?? 'python/agno_platform/generated',
+);
+const outputPackageDirectory = join(outputRoot, 'agent_runtime');
+const outputVersionDirectory = join(outputPackageDirectory, 'v1');
+const outputParentDirectory = dirname(outputRoot);
+mkdirSync(outputParentDirectory, { recursive: true });
+const stagingRoot = mkdtempSync(join(outputParentDirectory, '.agent-runtime-proto-'));
 const stagedOutputRoot = join(stagingRoot, 'generated');
 const stagedVersionDirectory = join(stagedOutputRoot, 'agent_runtime', 'v1');
 const grpcModulePath = join(stagedVersionDirectory, 'agent_runtime_pb2_grpc.py');
@@ -135,20 +141,37 @@ class ${serviceName}:
 `;
 }
 
-function writePackageInitializers() {
-  writeFileSync(join(stagedOutputRoot, '__init__.py'), '"""Generated protocol buffer modules for platform service contracts."""\n');
-  writeFileSync(
-    join(stagedOutputRoot, 'agent_runtime', '__init__.py'),
-    '"""Versioned agent runtime protocol buffer modules."""\n',
-  );
+function writeStagedPackageInitializer() {
   writeFileSync(
     join(stagedVersionDirectory, '__init__.py'),
     '"""Version 1 agent runtime protocol buffer modules."""\n',
   );
 }
 
+function writePackageInitializerIfMissing(filePath, contents) {
+  if (!existsSync(filePath)) {
+    writeFileSync(filePath, contents);
+  }
+}
+
+function prepareOwnedPackageDirectories() {
+  mkdirSync(outputPackageDirectory, { recursive: true });
+  writePackageInitializerIfMissing(
+    join(outputRoot, '__init__.py'),
+    '"""Generated protocol buffer modules for platform service contracts."""\n',
+  );
+  writePackageInitializerIfMissing(
+    join(outputPackageDirectory, '__init__.py'),
+    '"""Versioned agent runtime protocol buffer modules."""\n',
+  );
+}
+
 function generateIntoStagingDirectory() {
   mkdirSync(stagedVersionDirectory, { recursive: true });
+
+  if (process.env.PROTO_GENERATE_TEST_FORCE_FAILURE === '1') {
+    throw new Error('Forced generation failure for staging cleanup regression test.');
+  }
 
   const result = spawnSync(
     'uv',
@@ -167,11 +190,15 @@ function generateIntoStagingDirectory() {
     { shell: process.platform === 'win32', stdio: 'inherit' },
   );
 
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+  if (result.error) {
+    throw result.error;
   }
 
-  writePackageInitializers();
+  if (result.status !== 0) {
+    throw new Error(`grpc_tools.protoc exited with status ${result.status ?? 1}.`);
+  }
+
+  writeStagedPackageInitializer();
 }
 
 function validateAndPostprocessStagedFiles() {
@@ -210,18 +237,24 @@ function validateAndPostprocessStagedFiles() {
 }
 
 function promoteStagedFiles() {
-  const backupRoot = `${outputRoot}.backup-${process.pid}`;
-  const hasExistingOutput = existsSync(outputRoot);
+  const backupVersionDirectory = `${outputVersionDirectory}.backup-${process.pid}`;
+  const hasExistingVersion = existsSync(outputVersionDirectory);
+
+  prepareOwnedPackageDirectories();
 
   try {
-    if (hasExistingOutput) {
-      renameWithRetry(outputRoot, backupRoot);
+    if (hasExistingVersion) {
+      renameWithRetry(outputVersionDirectory, backupVersionDirectory);
     }
-    renameWithRetry(stagedOutputRoot, outputRoot);
+    renameWithRetry(stagedVersionDirectory, outputVersionDirectory);
   } catch (error) {
-    if (hasExistingOutput && !existsSync(outputRoot) && existsSync(backupRoot)) {
+    if (
+      hasExistingVersion &&
+      !existsSync(outputVersionDirectory) &&
+      existsSync(backupVersionDirectory)
+    ) {
       try {
-        renameWithRetry(backupRoot, outputRoot);
+        renameWithRetry(backupVersionDirectory, outputVersionDirectory);
       } catch {
         // Preserve the original promotion error; manual recovery can use the backup directory.
       }
@@ -231,8 +264,8 @@ function promoteStagedFiles() {
     rmSync(stagingRoot, { force: true, recursive: true });
   }
 
-  if (hasExistingOutput) {
-    rmSync(backupRoot, { force: true, recursive: true });
+  if (hasExistingVersion) {
+    rmSync(backupVersionDirectory, { force: true, recursive: true });
   }
 }
 
