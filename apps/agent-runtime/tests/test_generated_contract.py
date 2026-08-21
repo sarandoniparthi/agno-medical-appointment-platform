@@ -8,6 +8,15 @@ from pathlib import Path
 from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2
 
 
+def npm_command(platform_name: str | None = None) -> str:
+    return "npm.cmd" if (platform_name or os.name) == "nt" else "npm"
+
+
+def test_npm_command_matches_platform() -> None:
+    assert npm_command("nt") == "npm.cmd"
+    assert npm_command("posix") == "npm"
+
+
 def test_public_generated_messages_have_stable_module_identity() -> None:
     request = agent_runtime_pb2.HealthRequest(correlation_id="test-123")
 
@@ -40,7 +49,7 @@ def test_proto_generation_preserves_unowned_generated_artifacts() -> None:
 
         for _ in range(2):
             result = subprocess.run(
-                ["npm.cmd", "run", "proto:generate"],
+                [npm_command(), "run", "proto:generate"],
                 cwd=repository_root,
                 check=False,
                 capture_output=True,
