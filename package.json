@@ -7,6 +7,7 @@
     "build": "nx run-many -t build",
     "db:migrate": "tsx ./node_modules/typeorm/cli.js migration:run -d libs/database/src/lib/data-source.ts",
     "db:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d libs/database/src/lib/data-source.ts",
+    "proto:generate": "node tools/generate-proto.mjs",
     "test": "nx run-many -t test && uv run pytest",
     "lint": "nx run-many -t lint && uv run ruff check . && uv run pyright",
     "verify": "npm run lint && npm run test && npm run build"
@@ -60,6 +61,8 @@
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@nestjs/common": "^11.2.1",
     "@nestjs/core": "^11.2.1",
     "@nestjs/platform-express": "^11.2.1",
