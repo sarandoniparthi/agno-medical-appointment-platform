@@ -1,7 +1,8 @@
 # Local development
 
-Use Node.js 22.12.x (the repository pins `22.12.0` in `.nvmrc` and npm enforces
-`>=22.12.0 <23`), npm, uv, and Docker Compose. From the repository root, create
+Use Node.js 22.13 or newer in the Node 22 line (the repository pins `22.13.0`
+in `.nvmrc`) or Node 24; npm enforces `>=22.13.0 <23 || >=24.0.0`. Install npm,
+uv, and Docker Compose. From the repository root, create
 the single local configuration file before starting any target:
 
 ```powershell
