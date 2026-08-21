@@ -7,19 +7,24 @@
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "uv run uvicorn mcp_gateway.main:app --app-dir apps/mcp-gateway/src --host 0.0.0.0 --port 8010"
+        "command": "uv run --project ../../.. python -m mcp_gateway.main",
+        "cwd": "apps/mcp-gateway/src",
+        "envFile": ".env"
       }
     },
     "test": {
       "executor": "nx:run-commands",
+      "inputs": ["default", "pythonShared"],
       "options": { "command": "uv run pytest apps/mcp-gateway/tests -q" }
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": ["default", "pythonShared"],
       "options": { "command": "uv run ruff check apps/mcp-gateway" }
     },
     "typecheck": {
       "executor": "nx:run-commands",
+      "inputs": ["default", "pythonShared"],
       "options": { "command": "uv run pyright apps/mcp-gateway" }
     }
   }

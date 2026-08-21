@@ -1,10 +1,9 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { PlatformSettings0000000000001 } from '../migrations/0000000000001-platform-settings';
+import { requireDatabaseUrl } from './database.config';
 
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  'postgresql://scheduler:scheduler-local-only@localhost:5432/scheduler';
+const databaseUrl = requireDatabaseUrl();
 
 export const databaseMigrations = [PlatformSettings0000000000001];
 

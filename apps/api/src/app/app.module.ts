@@ -13,10 +13,7 @@ import { AppService } from './app.service';
     AgentRuntimeModule,
     TypeOrmModule.forRootAsync({
       useFactory: () =>
-        createTypeOrmOptions(
-          process.env.DATABASE_URL ??
-            'postgresql://scheduler:scheduler-local-only@localhost:5432/scheduler',
-        ),
+        createTypeOrmOptions(process.env.DATABASE_URL),
     }),
     TypeOrmModule.forFeature([PlatformSettingEntity]),
   ],

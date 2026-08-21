@@ -16,6 +16,15 @@
     "sharedGlobals": [
       "{workspaceRoot}/package-lock.json",
       "{workspaceRoot}/uv.lock"
+    ],
+    "pythonShared": [
+      "{workspaceRoot}/python/**/*",
+      "{workspaceRoot}/pyproject.toml",
+      "{workspaceRoot}/uv.lock"
+    ],
+    "agentRuntimeProtocol": [
+      "{workspaceRoot}/proto/**/*",
+      "{workspaceRoot}/tools/generate-proto.mjs"
     ]
   },
   "targetDefaults": {

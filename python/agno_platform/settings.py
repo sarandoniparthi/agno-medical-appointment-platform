@@ -1,7 +1,28 @@
 """Application configuration loaded from the environment."""
 
+from pathlib import Path
+
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+
+class AgentRuntimeSettings(BaseSettings):
+    """Local ports for the combined agent runtime HTTP and gRPC process."""
+
+    model_config = SettingsConfigDict(env_file=ROOT_ENV_FILE, extra="ignore")
+
+    http_port: int = Field(default=8000, alias="AGENT_HTTP_PORT")
+    grpc_port: int = Field(default=50051, alias="AGENT_GRPC_PORT")
+
+
+class McpGatewaySettings(BaseSettings):
+    """Local HTTP port for the MCP gateway process."""
+
+    model_config = SettingsConfigDict(env_file=ROOT_ENV_FILE, extra="ignore")
+
+    http_port: int = Field(default=8010, alias="MCP_GATEWAY_PORT")
 
 
 class BedrockSettings(BaseSettings):

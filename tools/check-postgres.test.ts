@@ -9,4 +9,11 @@ describe('postgres compose configuration', () => {
     expect(compose).toContain('pg_isready');
     expect(compose).toContain('./infra/postgres/init:/docker-entrypoint-initdb.d:ro');
   });
+
+  it('requires an explicit password and publishes the documented local port', () => {
+    expect(compose).toContain(
+      'POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}',
+    );
+    expect(compose).toContain('"${POSTGRES_HOST_PORT:-55432}:5432"');
+  });
 });

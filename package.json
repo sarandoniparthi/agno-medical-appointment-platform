@@ -2,6 +2,9 @@
   "name": "runtime-foundation",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "scripts": {
     "nx": "nx",
     "build": "nx run-many -t build",
@@ -10,7 +13,8 @@
     "proto:generate": "node tools/generate-proto.mjs",
     "test": "nx run-many -t test && uv run pytest",
     "lint": "nx run-many -t lint && uv run ruff check . && uv run pyright",
-    "verify": "npm run lint && npm run test && npm run build"
+    "verify:tools": "vitest run --config tools/vitest.config.ts",
+    "verify": "npm run lint && npm run test && npm run build && nx run api:test-artifact && npm run verify:tools"
   },
   "devDependencies": {
     "@babel/core": "^7.14.5",

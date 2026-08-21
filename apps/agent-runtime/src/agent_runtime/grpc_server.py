@@ -10,12 +10,19 @@ from agent_runtime.grpc_service import AgentRuntimeService
 from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2_grpc
 
 
-async def serve_grpc(host: str, port: int) -> None:
+def create_grpc_server(host: str, port: int) -> grpc.aio.Server:
     server = grpc.aio.server()
     agent_runtime_pb2_grpc.add_AgentRuntimeServiceServicer_to_server(
         AgentRuntimeService(), server
     )
-    server.add_insecure_port(f"{host}:{port}")
+    bound_port = server.add_insecure_port(f"{host}:{port}")
+    if bound_port == 0:
+        raise RuntimeError(f"Failed to bind the agent runtime gRPC server to {host}:{port}")
+    return server
+
+
+async def serve_grpc(host: str, port: int) -> None:
+    server = create_grpc_server(host, port)
     await server.start()
 
     try:
