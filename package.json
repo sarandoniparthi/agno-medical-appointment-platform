@@ -8,12 +8,13 @@
   "scripts": {
     "nx": "nx",
     "build": "nx run-many -t build",
-    "db:migrate": "tsx ./node_modules/typeorm/cli.js migration:run -d libs/database/src/lib/data-source.ts",
-    "db:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d libs/database/src/lib/data-source.ts",
+    "db:migrate": "node --env-file=.env --import tsx ./node_modules/typeorm/cli.js migration:run -d libs/database/src/lib/data-source.ts",
+    "db:revert": "node --env-file=.env --import tsx ./node_modules/typeorm/cli.js migration:revert -d libs/database/src/lib/data-source.ts",
     "proto:generate": "node tools/generate-proto.mjs",
     "test": "nx run-many -t test && uv run pytest",
     "lint": "nx run-many -t lint && uv run ruff check . && uv run pyright",
     "verify:tools": "vitest run --config tools/vitest.config.ts",
+    "verify:compose": "docker compose --env-file .env.example config --quiet",
     "verify": "npm run lint && npm run test && npm run build && nx run api:test-artifact && npm run verify:tools"
   },
   "devDependencies": {

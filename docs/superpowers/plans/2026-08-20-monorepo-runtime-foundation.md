@@ -1070,7 +1070,7 @@ State that `.env` is local-only, Bedrock uses the ambient AWS credential chain, 
 Run:
 
 ```powershell
-docker compose config --quiet
+npm run verify:compose
 npm run verify
 uv run pytest
 uv run ruff check .
