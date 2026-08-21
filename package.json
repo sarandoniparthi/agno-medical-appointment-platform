@@ -71,6 +71,6 @@
     "react-router-dom": "6.30.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "typeorm": "^1.1.0"
+    "typeorm": "0.3.31"
   }
 }

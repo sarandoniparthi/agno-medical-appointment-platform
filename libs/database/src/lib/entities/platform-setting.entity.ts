@@ -1,22 +1,31 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { EntitySchema } from 'typeorm';
 
-@Entity({ name: 'platform_settings' })
-export class PlatformSettingEntity {
-  @PrimaryColumn({ type: 'text' })
-  key!: string;
-
-  @Column({ type: 'jsonb' })
-  value!: Record<string, unknown>;
-
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt!: Date;
+export interface PlatformSettingEntity {
+  key: string;
+  value: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
 }
+
+export const PlatformSettingEntity = new EntitySchema<PlatformSettingEntity>({
+  name: 'platform_settings',
+  columns: {
+    key: {
+      type: 'text',
+      primary: true,
+    },
+    value: {
+      type: 'jsonb',
+    },
+    createdAt: {
+      name: 'created_at',
+      type: 'timestamptz',
+      createDate: true,
+    },
+    updatedAt: {
+      name: 'updated_at',
+      type: 'timestamptz',
+      updateDate: true,
+    },
+  },
+});

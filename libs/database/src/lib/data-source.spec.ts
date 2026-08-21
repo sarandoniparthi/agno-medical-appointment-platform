@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import dataSource, { databaseMigrations } from './data-source';
 
 describe('migration data source', () => {
-  it('loads explicit migrations without startup schema changes', async () => {
-    const { databaseMigrations, default: dataSource } = await import(
-      './data-source'
-    );
-
+  it('loads explicit migrations without startup schema changes', () => {
     expect(databaseMigrations).toHaveLength(1);
     expect(dataSource.options.migrations).toEqual(databaseMigrations);
     expect(dataSource.options.synchronize).toBe(false);

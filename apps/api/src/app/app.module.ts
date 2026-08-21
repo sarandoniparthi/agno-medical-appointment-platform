@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { createTypeOrmOptions } from '../../../../libs/database/src/lib/database.config';
+import {
+  createTypeOrmOptions,
+  PlatformSettingEntity,
+} from '@scheduler/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -13,6 +16,7 @@ import { AppService } from './app.service';
             'postgresql://scheduler:scheduler-local-only@localhost:5432/scheduler',
         ),
     }),
+    TypeOrmModule.forFeature([PlatformSettingEntity]),
   ],
   controllers: [AppController],
   providers: [AppService],
