@@ -1,7 +1,7 @@
 """Strict structured inputs and outputs for scheduling workflows."""
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator
 
@@ -77,6 +77,45 @@ class ApprovalPayload(StrictModel):
     candidate_id: str | None = None
     edited_start_at: datetime | None = None
     reason: str | None = None
+
+
+class WorkflowEvent(StrictModel):
+    sequence: int = Field(ge=1)
+    type: Literal[
+        "request_received", "clarification_required", "intent_parsed",
+        "candidates_ready", "approval_required", "approved", "rejected",
+        "mutation_completed", "recoverable_error",
+    ]
+    occurred_at: datetime
+    message: str | None = None
+
+
+class WorkflowRequirement(StrictModel):
+    id: str
+    kind: Literal["input", "approval"]
+    status: Literal["pending", "approved", "rejected", "expired"]
+    expires_at: datetime
+
+
+def _empty_candidates() -> list[SchedulingCandidate]:
+    return []
+
+
+class WorkflowSnapshot(StrictModel):
+    workflow_id: str
+    session_id: str
+    run_id: str
+    action: Literal["create", "reschedule", "cancel"] | None = None
+    status: Literal[
+        "running", "input_required", "approval_required", "approved",
+        "completed", "rejected", "failed",
+    ]
+    events: list[WorkflowEvent]
+    requirement: WorkflowRequirement | None = None
+    candidates: list[SchedulingCandidate] = Field(
+        default_factory=_empty_candidates, max_length=3
+    )
+    context: dict[str, Any] = Field(default_factory=dict)
 
 
 class PatientSearchResult(StrictModel):

@@ -7,13 +7,14 @@ from pathlib import Path
 import grpc
 
 from agent_runtime.grpc_service import AgentRuntimeService
+from agent_runtime.scheduling.default_workflow import LazySchedulingWorkflow
 from agno_platform.generated.agent_runtime.v1 import agent_runtime_pb2_grpc
 
 
 def create_grpc_server(host: str, port: int) -> grpc.aio.Server:
     server = grpc.aio.server()
     agent_runtime_pb2_grpc.add_AgentRuntimeServiceServicer_to_server(
-        AgentRuntimeService(), server
+        AgentRuntimeService(LazySchedulingWorkflow()), server
     )
     bound_port = server.add_insecure_port(f"{host}:{port}")
     if bound_port == 0:
