@@ -23,7 +23,7 @@ describe('migration data source', () => {
       './data-source'
     );
 
-    expect(databaseMigrations).toHaveLength(1);
+    expect(databaseMigrations).toHaveLength(3);
     expect(dataSource.options.migrations).toEqual(databaseMigrations);
     expect(dataSource.options.synchronize).toBe(false);
     expect(dataSource.options.migrationsRun).toBe(false);
