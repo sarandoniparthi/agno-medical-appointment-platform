@@ -141,12 +141,12 @@ export function isCancelAppointmentCommand(
 ): value is CancelAppointmentCommand {
   return (
     isRecord(value) &&
-    typeof value.appointmentId === 'string' &&
-    typeof value.reason === 'string' &&
-    value.reason.trim().length > 0 &&
-    Number.isInteger(value.observedVersion) &&
-    typeof value.idempotencyKey === 'string' &&
-    value.idempotencyKey.trim().length > 0
+    typeof value['appointmentId'] === 'string' &&
+    typeof value['reason'] === 'string' &&
+    value['reason'].trim().length > 0 &&
+    Number.isInteger(value['observedVersion']) &&
+    typeof value['idempotencyKey'] === 'string' &&
+    value['idempotencyKey'].trim().length > 0
   );
 }
 
@@ -155,17 +155,17 @@ export function isRescheduleAppointmentCommand(
 ): value is RescheduleAppointmentCommand {
   return (
     isRecord(value) &&
-    typeof value.appointmentId === 'string' &&
-    typeof value.startAt === 'string' &&
-    Number.isInteger(value.observedVersion) &&
-    typeof value.idempotencyKey === 'string' &&
-    value.idempotencyKey.trim().length > 0
+    typeof value['appointmentId'] === 'string' &&
+    typeof value['startAt'] === 'string' &&
+    Number.isInteger(value['observedVersion']) &&
+    typeof value['idempotencyKey'] === 'string' &&
+    value['idempotencyKey'].trim().length > 0
   );
 }
 
 export function isWorkflowEventSequence(events: WorkflowEvent[]): boolean {
   return events.every(
-    (event, index) => index === 0 || event.sequence > events[index - 1].sequence,
+    (event, index) => index === 0 || event.sequence > events[index - 1]!.sequence,
   );
 }
 
