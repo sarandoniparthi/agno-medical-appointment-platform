@@ -36,7 +36,11 @@ export function AdminWorkspace({ api = httpSchedulingApi }: { api?: SchedulingAp
       <section className="calendar-panel"><div className="calendar-toolbar"><div><p className="eyebrow">Week view</p><h2>August 24–28, 2026</h2></div><div className="week-actions"><button aria-label="Previous week">‹</button><button>Today</button><button aria-label="Next week">›</button></div></div>{error && <p role="alert" className="error">{error}</p>}<CalendarGrid appointments={appointments} onSelect={setSelected}/></section>
       <AssistantPanel />
     </div>
-    {selected && <AppointmentDialog appointment={selected} onClose={() => setSelected(undefined)} onCancel={async (reason) => { await api.cancelAppointment(selected.id, { reason, observedVersion: selected.version, idempotencyKey: crypto.randomUUID() }); setSelected(undefined); await load(); }} onReschedule={async (startAt) => { await api.rescheduleAppointment(selected.id, { startAt, observedVersion: selected.version, idempotencyKey: crypto.randomUUID() }); setSelected(undefined); await load(); }}/>} 
+    {selected && (
+      <AppointmentDialog appointment={selected} onClose={() => setSelected(undefined)}
+        onCancel={async (reason) => { await api.cancelAppointment(selected.id, { reason, observedVersion: selected.version, idempotencyKey: crypto.randomUUID() }); setSelected(undefined); await load(); }}
+        onReschedule={async (startAt) => { await api.rescheduleAppointment(selected.id, { startAt, observedVersion: selected.version, idempotencyKey: crypto.randomUUID() }); setSelected(undefined); await load(); }} />
+    )}
     {creating && <CreateAppointmentDialog api={api} catalog={catalog} onClose={() => setCreating(false)} onCreated={async () => { setCreating(false); await load(); }} />}
   </main>;
 }
