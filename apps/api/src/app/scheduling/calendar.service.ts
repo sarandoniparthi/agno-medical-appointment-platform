@@ -61,6 +61,32 @@ export class CalendarService {
     return { clinics, doctors, appointmentTypes };
   }
 
+  async findOpenSlots(options: { specialty?: string; current?: AppointmentView }): Promise<Record<string, unknown>[]> {
+    const rows = await this.dataSource.query<Array<Record<string, unknown>>>(
+      `SELECT concat(d.id, ':', slot.start_at) id, d.id doctor_id, d.display_name doctor_display_name,
+        c.id clinic_id, c.name clinic_name, c.timezone clinic_timezone,
+        t.id appointment_type_id, t.name appointment_type_name, slot.start_at,
+        slot.start_at + (t.duration_minutes || ' minutes')::interval end_at
+       FROM doctors d JOIN doctor_clinics dc ON dc.doctor_id=d.id JOIN clinics c ON c.id=dc.clinic_id
+       CROSS JOIN LATERAL (SELECT * FROM appointment_types WHERE organization_id=$1 ORDER BY duration_minutes LIMIT 1) t
+       CROSS JOIN LATERAL generate_series(date_trunc('day', now()) + interval '1 day' + interval '9 hours',
+         date_trunc('day', now()) + interval '14 days' + interval '16 hours', interval '1 hour') slot(start_at)
+       WHERE d.organization_id=$1 AND extract(isodow from slot.start_at) < 6
+         AND ($2::text IS NULL OR d.specialty=$2)
+         AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.doctor_id=d.id AND a.status='scheduled'
+           AND tstzrange(a.start_at,a.end_at,'[)') && tstzrange(slot.start_at,slot.start_at + (t.duration_minutes || ' minutes')::interval,'[)'))
+       ORDER BY slot.start_at,d.display_name LIMIT 12`,
+      [DEMO_ORGANIZATION_ID, options.specialty || null],
+    );
+    return rows.map((row, index) => ({
+      ...row,
+      start_at: (row['start_at'] as Date).toISOString(), end_at: (row['end_at'] as Date).toISOString(),
+      explanation: 'Conflict-free opening', availability_score: 50,
+      preference_score: Math.max(15, 30 - index), continuity_score: options.current?.doctorId === row['doctor_id'] ? 20 : 10,
+      ...(options.current ? { observed_version: options.current.version } : {}),
+    }));
+  }
+
   private appointmentSelect(): string {
     return `SELECT a.id,a.organization_id,a.patient_id,p.display_name patient_display_name,
       a.doctor_id,d.display_name doctor_display_name,a.clinic_id,c.name clinic_name,

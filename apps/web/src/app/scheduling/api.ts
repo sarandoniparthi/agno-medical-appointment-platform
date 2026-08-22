@@ -14,6 +14,8 @@ export interface Catalog {
 }
 
 export interface PatientOption { id: string; schedulingCode: string; displayName: string }
+export interface AgentCandidate { id: string; doctor_display_name: string; clinic_name: string; start_at: string; end_at: string; explanation: string; availability_score: number; preference_score: number; continuity_score: number }
+export interface AgentWorkflow { run_id: string; action?: 'create'|'reschedule'|'cancel'; status: 'running'|'input_required'|'approval_required'|'approved'|'completed'|'rejected'|'failed'; candidates: AgentCandidate[]; context: Record<string, unknown>; requirement?: { id: string; status: string; expires_at: string } }
 
 export interface SchedulingApi {
   listCalendar(query: CalendarQuery): Promise<AppointmentView[]>;
@@ -22,6 +24,9 @@ export interface SchedulingApi {
   createAppointment(command: CreateAppointmentCommand): Promise<AppointmentMutationResult>;
   rescheduleAppointment(id: string, command: Omit<RescheduleAppointmentCommand, 'appointmentId'>): Promise<AppointmentMutationResult>;
   cancelAppointment(id: string, command: Omit<CancelAppointmentCommand, 'appointmentId'>): Promise<AppointmentMutationResult>;
+  startWorkflow(request: string): Promise<AgentWorkflow>;
+  getWorkflow(runId: string): Promise<AgentWorkflow>;
+  respondToWorkflow(runId: string, response: 'approve'|'reject'|'edit'|'find_more', payload?: Record<string, unknown>): Promise<AgentWorkflow>;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -44,4 +49,7 @@ export const httpSchedulingApi: SchedulingApi = {
   createAppointment: (command) => request('/appointments', { method: 'POST', body: JSON.stringify(command) }),
   rescheduleAppointment: (id, command) => request(`/appointments/${id}/reschedule`, { method: 'PATCH', body: JSON.stringify(command) }),
   cancelAppointment: (id, command) => request(`/appointments/${id}/cancel`, { method: 'PATCH', body: JSON.stringify(command) }),
+  startWorkflow: (workflowRequest) => request('/workflows', { method: 'POST', body: JSON.stringify({ request: workflowRequest }) }),
+  getWorkflow: (runId) => request(`/workflows/${runId}`),
+  respondToWorkflow: (runId, response, payload = {}) => request(`/workflows/${runId}/responses`, { method: 'POST', body: JSON.stringify({ response, payload }) }),
 };

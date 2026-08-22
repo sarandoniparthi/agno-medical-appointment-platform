@@ -5,8 +5,8 @@ from typing import Any, Literal, Protocol
 from uuid import uuid4
 
 from agent_runtime.scheduling.models import (
-    CancelIntent,
     CreateIntent,
+    RescheduleIntent,
     SchedulingCandidate,
     SchedulingIntent,
     WorkflowEvent,
@@ -25,6 +25,9 @@ class WorkflowTools(Protocol):
     async def find_open_slots(
         self, query: dict[str, str], correlation_id: str
     ) -> list[dict[str, Any]]: ...
+    async def get_appointment(
+        self, appointment_id: str, correlation_id: str
+    ) -> dict[str, Any]: ...
 
 
 class WorkflowStore(Protocol):
@@ -36,11 +39,24 @@ class WorkflowStore(Protocol):
     ) -> bool: ...
 
 
+class MutationExecutor(Protocol):
+    async def execute(
+        self, snapshot: dict[str, Any], payload: dict[str, Any], correlation_id: str
+    ) -> dict[str, Any]: ...
+
+
 class SchedulingWorkflow:
-    def __init__(self, parser: IntentParser, tools: WorkflowTools, store: WorkflowStore) -> None:
+    def __init__(
+        self,
+        parser: IntentParser,
+        tools: WorkflowTools,
+        store: WorkflowStore,
+        mutation_executor: MutationExecutor | None = None,
+    ) -> None:
         self._parser = parser
         self._tools = tools
         self._store = store
+        self._mutation_executor = mutation_executor
 
     async def start(self, request: str, correlation_id: str) -> WorkflowSnapshot:
         now = datetime.now(UTC)
@@ -72,10 +88,21 @@ class SchedulingWorkflow:
                 [SchedulingCandidate.model_validate(slot) for slot in slots]
             )
             snapshot.context["patient_id"] = patients[0]["id"]
-        else:
+        elif isinstance(intent, RescheduleIntent):
+            appointment = await self._tools.get_appointment(intent.appointment_id, correlation_id)
+            slots = await self._tools.find_open_slots(
+                {"appointmentId": intent.appointment_id}, correlation_id
+            )
+            snapshot.candidates = rank_candidates(
+                [SchedulingCandidate.model_validate(slot) for slot in slots]
+            )
             snapshot.context["appointment_id"] = intent.appointment_id
-            if isinstance(intent, CancelIntent):
-                snapshot.context["reason"] = intent.reason
+            snapshot.context["appointment"] = appointment
+        else:
+            appointment = await self._tools.get_appointment(intent.appointment_id, correlation_id)
+            snapshot.context["appointment_id"] = intent.appointment_id
+            snapshot.context["appointment"] = appointment
+            snapshot.context["reason"] = intent.reason
 
         approval_id = str(uuid4())
         expires_at = now + timedelta(minutes=15)
@@ -125,4 +152,19 @@ class SchedulingWorkflow:
             occurred_at=datetime.now(UTC),
         ))
         self._store.save(snapshot.model_dump(mode="json"))
+        if status == "approved" and self._mutation_executor is not None:
+            correlation_id = str(snapshot.context["correlation_id"])
+            appointment = await self._mutation_executor.execute(
+                snapshot.model_dump(mode="json"), payload, correlation_id
+            )
+            snapshot.context["appointment"] = appointment
+            snapshot.status = "completed"
+            snapshot.events.append(
+                WorkflowEvent(
+                    sequence=len(snapshot.events) + 1,
+                    type="mutation_completed",
+                    occurred_at=datetime.now(UTC),
+                )
+            )
+            self._store.save(snapshot.model_dump(mode="json"))
         return snapshot

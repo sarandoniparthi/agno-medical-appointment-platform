@@ -34,7 +34,7 @@ export function AdminWorkspace({ api = httpSchedulingApi }: { api?: SchedulingAp
         <div className="legend"><span><i className="scheduled-dot"/>Scheduled</span><span><i className="completed-dot"/>Completed</span></div>
       </aside>
       <section className="calendar-panel"><div className="calendar-toolbar"><div><p className="eyebrow">Week view</p><h2>August 24–28, 2026</h2></div><div className="week-actions"><button aria-label="Previous week">‹</button><button>Today</button><button aria-label="Next week">›</button></div></div>{error && <p role="alert" className="error">{error}</p>}<CalendarGrid appointments={appointments} onSelect={setSelected}/></section>
-      <AssistantPanel />
+      <AssistantPanel api={api} onCompleted={load} />
     </div>
     {selected && (
       <AppointmentDialog appointment={selected} onClose={() => setSelected(undefined)}

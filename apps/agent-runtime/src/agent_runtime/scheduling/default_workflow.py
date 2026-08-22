@@ -4,6 +4,7 @@ import asyncio
 from typing import Any, Literal
 
 import httpx
+from pydantic import TypeAdapter
 
 from agent_runtime.scheduling.intent_parser import create_intent_parser
 from agent_runtime.scheduling.models import WorkflowSnapshot
@@ -12,6 +13,8 @@ from agent_runtime.scheduling.tools_client import SchedulingToolsClient
 from agent_runtime.scheduling.workflow import SchedulingWorkflow
 from agno_platform.models.bedrock import create_bedrock_model
 from agno_platform.settings import AgentRuntimeSettings, BedrockSettings
+
+_object_adapter: TypeAdapter[dict[str, Any]] = TypeAdapter(dict[str, Any])
 
 
 class HttpWorkflowTools:
@@ -32,6 +35,32 @@ class HttpWorkflowTools:
                 query, correlation_id
             )
 
+    async def get_appointment(
+        self, appointment_id: str, correlation_id: str
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient() as client:
+            return await SchedulingToolsClient(self._base_url, client).get_appointment(
+                appointment_id, correlation_id
+            )
+
+
+class HttpWorkflowMutationExecutor:
+    def __init__(self, base_url: str) -> None:
+        self._base_url = base_url.rstrip("/")
+
+    async def execute(
+        self, snapshot: dict[str, Any], payload: dict[str, Any], correlation_id: str
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self._base_url}/api/internal/workflow-mutations",
+                json={"snapshot": snapshot, "payload": payload},
+                headers={"x-correlation-id": correlation_id},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            return _object_adapter.validate_python(response.json())
+
 
 def create_default_workflow() -> SchedulingWorkflow:
     runtime_settings = AgentRuntimeSettings()
@@ -42,7 +71,9 @@ def create_default_workflow() -> SchedulingWorkflow:
     )
     tools = HttpWorkflowTools(runtime_settings.nest_internal_url)
     store = create_agno_store(runtime_settings.database_url)
-    return SchedulingWorkflow(parser, tools, store)
+    return SchedulingWorkflow(
+        parser, tools, store, HttpWorkflowMutationExecutor(runtime_settings.nest_internal_url)
+    )
 
 
 class LazySchedulingWorkflow:

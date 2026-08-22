@@ -6,9 +6,10 @@ helps clinic administrators search calendars, compare suitable appointments,
 review travel and weather context, approve an agent proposal, and schedule the
 appointment safely.
 
-This repository currently contains the tested runtime foundation. The complete
-calendar UI, scheduling workflows, Agno teams, three-level memory, HITL flows,
-and weather/maps MCP integrations are planned next and are not yet implemented.
+The implemented slice includes a seeded administrator calendar, conflict-safe
+create/reschedule/cancel operations, and an Agno workflow that proposes ranked
+slots and pauses for explicit human approval before NestJS performs a write.
+Weather/maps MCP tools, teams, and three-level memory remain future increments.
 
 ## Architecture
 
@@ -45,7 +46,7 @@ access patient or appointment tables directly.
 - Nx, TypeScript, React 19, Vite, NestJS 11, and TypeORM 0.3
 - Python 3.12, FastAPI, Pydantic 2, Agno, Ruff, Pyright, and pytest
 - Protocol Buffers and gRPC between the NestJS and Python runtime boundaries
-- PostgreSQL 17 with pgvector and pgcrypto in Docker
+- PostgreSQL with pgvector and pgcrypto (local server for current development)
 - Amazon Bedrock for model inference through Agno's Bedrock integration
 - Vitest for TypeScript and React tests; pytest for Python tests
 
@@ -55,7 +56,7 @@ access patient or appointment tables directly.
 - npm
 - Python 3.12
 - [uv](https://docs.astral.sh/uv/)
-- Docker Desktop with Docker Compose
+- A local PostgreSQL server with the `vector` and `pgcrypto` extensions
 - AWS CLI/profile, SSO, or an IAM role only when exercising Bedrock
 
 The repository pins Node 22.13 in `.nvmrc` and enforces
@@ -67,22 +68,33 @@ Run these commands from the repository root. On Windows PowerShell, use
 `npm.cmd` if the `npm.ps1` execution-policy shim is blocked.
 
 ```powershell
-Copy-Item .env.example .env
 npm.cmd install
 uv sync
 ```
 
-The root `.env` is local-only and must not be committed.
+Create a root `.env` (local-only; never commit it) with at least:
+
+```dotenv
+DATABASE_URL=postgresql://postgres:123@localhost:5432/agnoagents
+API_PORT=3000
+WEB_PORT=4200
+AGENT_HTTP_PORT=8000
+AGENT_GRPC_PORT=50051
+AGENT_GRPC_URL=127.0.0.1:50051
+NEST_INTERNAL_URL=http://127.0.0.1:3000
+AWS_REGION=us-east-1
+AWS_PROFILE=dev_stg
+BEDROCK_MODEL_ID=
+BEDROCK_INFERENCE_PROFILE_ARN=
+```
 
 ## Environment variables
 
-The supplied `.env.example` configures these local endpoints:
+The local `.env` configures these endpoints:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `POSTGRES_HOST_PORT` | `55432` | PostgreSQL port exposed on the host |
-| `POSTGRES_PASSWORD` | `scheduler-local-only` | Local Docker database password |
-| `DATABASE_URL` | Port `55432` | NestJS and TypeORM connection URL |
+| `DATABASE_URL` | `localhost:5432/agnoagents` | NestJS, TypeORM, and Agno persistence |
 | `API_PORT` | `3000` | NestJS HTTP API |
 | `WEB_PORT` | `4200` | React development server |
 | `AGENT_HTTP_PORT` | `8000` | Agent runtime FastAPI server |
@@ -91,8 +103,7 @@ The supplied `.env.example` configures these local endpoints:
 | `MCP_GATEWAY_PORT` | `8010` | MCP gateway HTTP server |
 | `AWS_REGION` | `us-east-1` | Bedrock AWS Region |
 
-If `POSTGRES_HOST_PORT` changes, update the port in `DATABASE_URL` as well. If
-`AGENT_GRPC_PORT` changes, update `AGENT_GRPC_URL` to match.
+If `AGENT_GRPC_PORT` changes, update `AGENT_GRPC_URL` to match.
 
 ### Bedrock configuration
 
@@ -121,29 +132,26 @@ aws sso login --profile YOUR_PROFILE
 $env:AWS_PROFILE = "YOUR_PROFILE"
 ```
 
-## PostgreSQL and pgvector
+## Local PostgreSQL and pgvector
 
-The application is designed to use PostgreSQL in Docker, not a separately
-installed local PostgreSQL server.
+Current development uses PostgreSQL installed on localhost. Create the
+`agnoagents` database and enable the required extensions once:
 
 ```powershell
-docker compose up -d postgres
-docker compose ps
+psql -U postgres -c "CREATE DATABASE agnoagents;"
+psql -U postgres -d agnoagents -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 npm.cmd run db:migrate
 ```
 
-The container listens on port `5432`, while Docker publishes it as host port
-`55432` to avoid the PostgreSQL instance already using local port `5432`.
-Database configuration fails closed when `POSTGRES_PASSWORD` or `DATABASE_URL`
-is absent. TypeORM has `synchronize: false` and `migrationsRun: false`; schema
-changes must use explicit migrations.
+The migration command loads the root `.env`. Configuration fails closed when
+`DATABASE_URL` is absent. TypeORM has `synchronize: false` and `migrationsRun:
+false`; schema changes use explicit migrations.
 
 Useful database commands:
 
 ```powershell
 npm.cmd run db:migrate
 npm.cmd run db:revert
-docker compose stop postgres
 ```
 
 ## Run the platform
@@ -197,6 +205,18 @@ Invoke-RestMethod http://localhost:3000/api/ready
 `/api/ready` succeeds only when the NestJS API can reach the Python gRPC
 runtime.
 
+## Test the appointment workflow
+
+1. Open `http://localhost:4200` and confirm the seeded weekly calendar loads.
+2. In **Scheduling agent**, enter `Schedule Maya with cardiology next week`.
+3. Review the ranked candidates and choose **Approve this slot**. Approval is
+   persisted before NestJS revalidates it and performs the transaction.
+4. To modify an existing booking, ask `Reschedule appointment <id> next week`
+   or `Cancel appointment <id> because patient requested it`, then approve.
+
+Direct create, reschedule, and cancellation dialogs remain available as an
+administrative fallback.
+
 ## Development and verification
 
 ```powershell
@@ -219,25 +239,26 @@ The Bedrock smoke test is opt-in and requires valid ambient AWS authentication
 and an enabled model or inference profile. It is not part of the standard test
 suite.
 
-## Current foundation capabilities
+## Current capabilities
 
 - Nx task orchestration for TypeScript and Python projects
 - React, NestJS, FastAPI, and MCP gateway application boundaries
 - Unified FastAPI and asynchronous gRPC runtime lifecycle
 - Versioned protobuf contract and deterministic generated Python bindings
 - NestJS gRPC deadlines, error mapping, readiness, and shutdown cleanup
-- Docker PostgreSQL 17 configuration with pgvector and pgcrypto initialization
 - Explicit TypeORM migration boundary with fail-closed configuration
 - Amazon Bedrock model construction through Agno without embedded credentials
 - Cross-language PII-sensitive key redaction and correlation IDs
 - Unit, integration, artifact, configuration, lint, type, and build checks
+- Seeded calendar, catalog, patient lookup, and appointment detail APIs
+- Transactional/idempotent create, reschedule, and cancellation operations
+- Bedrock-backed Agno intent parsing and ranked conflict-free candidates
+- Durable human approval and verified appointment mutation handoff
+- Resumable workflow controls in the administrator assistant panel
 
 ## Planned application capabilities
 
-- Administrator calendar and conversational scheduling experience
-- Doctor availability, clinic rules, conflicts, and appointment transactions
 - Agno agents, teams, deterministic workflows, and structured outputs
-- Human-in-the-loop approval before appointment mutations
 - Session state plus short-term, user-level, and organizational memory
 - PII/PHI redaction, policy guardrails, audit events, and authorization
 - Real-time run, tool, workflow, approval, and appointment events
@@ -246,11 +267,3 @@ suite.
 
 See the detailed [platform design](docs/superpowers/specs/2026-08-20-agno-medical-appointment-platform-design.md)
 and [local development guide](docs/development.md).
-
-## Current environment limitation
-
-The pgvector Docker image pull previously failed on this workstation because of
-an upstream CloudFront EOF response. As a result, live PostgreSQL extension
-checks, TypeORM migration execution, and complete `/api/ready` verification are
-still pending a successful image pull. The static configuration and automated
-repository checks are complete.

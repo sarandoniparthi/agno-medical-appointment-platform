@@ -24,10 +24,14 @@ function api(): SchedulingApi {
     createAppointment: vi.fn().mockResolvedValue({ appointment, replayed: false }),
     rescheduleAppointment: vi.fn().mockResolvedValue({ appointment, replayed: false }),
     cancelAppointment: vi.fn().mockResolvedValue({ appointment: { ...appointment, status: 'cancelled' }, replayed: false }),
+    startWorkflow: vi.fn(),
+    getWorkflow: vi.fn().mockRejectedValue(new Error('not found')),
+    respondToWorkflow: vi.fn(),
   };
 }
 
 describe('AdminWorkspace', () => {
+  beforeEach(() => localStorage.clear());
   it('loads a real calendar and refreshes it when filters change', async () => {
     const schedulingApi = api();
     render(<AdminWorkspace api={schedulingApi} />);
@@ -71,5 +75,27 @@ describe('AdminWorkspace', () => {
         appointmentTypeId: 'type-1', startAt: '2026-08-25T15:00:00.000Z',
       }),
     ));
+  });
+
+  it('starts an agent workflow and requires approval before the appointment mutation', async () => {
+    const schedulingApi = api();
+    vi.mocked(schedulingApi.startWorkflow).mockResolvedValue({
+      run_id: 'run-1', action: 'create', status: 'approval_required', context: {},
+      requirement: { id: 'approval-1', status: 'pending', expires_at: '2026-08-22T21:00:00Z' },
+      candidates: [{ id: 'slot-1', doctor_display_name: 'Dr. Avery Shah', clinic_name: 'North Loop Clinic', start_at: '2026-08-25T15:00:00Z', end_at: '2026-08-25T15:30:00Z', explanation: 'Conflict-free opening', availability_score: 50, preference_score: 30, continuity_score: 20 }],
+    });
+    vi.mocked(schedulingApi.respondToWorkflow).mockResolvedValue({
+      run_id: 'run-1', action: 'create', status: 'completed', context: { appointment }, candidates: [],
+    });
+    render(<AdminWorkspace api={schedulingApi} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Schedule Maya/), { target: { value: 'Schedule Maya with cardiology next week' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask agent' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve this slot' }));
+
+    await waitFor(() => expect(schedulingApi.respondToWorkflow).toHaveBeenCalledWith(
+      'run-1', 'approve', { candidate_id: 'slot-1' },
+    ));
+    expect(await screen.findByText('Appointment updated successfully.')).toBeTruthy();
   });
 });

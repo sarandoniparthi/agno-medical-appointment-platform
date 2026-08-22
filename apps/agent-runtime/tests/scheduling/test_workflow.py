@@ -13,6 +13,11 @@ class FakeParser:
 
 
 class FakeTools:
+    async def get_appointment(
+        self, appointment_id: str, correlation_id: str
+    ) -> dict[str, Any]:
+        return {"id": appointment_id, "version": 1}
+
     async def search_patients(self, query: str, correlation_id: str) -> list[dict[str, str]]:
         return [{"id": "patient-1", "scheduling_code": "PT-1001", "display_name": "Maya"}]
 
@@ -53,6 +58,19 @@ class FakeStore:
         return True
 
 
+class FakeMutationExecutor:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def execute(
+        self, snapshot: dict[str, Any], payload: dict[str, Any], correlation_id: str
+    ) -> dict[str, Any]:
+        self.calls += 1
+        assert snapshot["status"] == "approved"
+        assert correlation_id == "corr-1"
+        return {"id": "appointment-1", "status": "scheduled"}
+
+
 @pytest.mark.asyncio
 async def test_create_persists_approval_before_returning_ranked_candidates() -> None:
     store = FakeStore()
@@ -79,3 +97,20 @@ async def test_reject_resumes_persisted_run_without_mutation() -> None:
     assert rejected.status == "rejected"
     assert rejected.events[-1].type == "rejected"
     assert workflow.get(started.run_id).status == "rejected"
+
+
+@pytest.mark.asyncio
+async def test_approval_persists_before_exactly_one_scoped_mutation() -> None:
+    store = FakeStore()
+    executor = FakeMutationExecutor()
+    workflow = SchedulingWorkflow(FakeParser(), FakeTools(), store, executor)
+    started = await workflow.start("Schedule Maya", "corr-1")
+    candidate_id = started.candidates[0].id
+
+    completed = await workflow.respond(
+        started.run_id, "approve", {"candidate_id": candidate_id}
+    )
+
+    assert completed.status == "completed"
+    assert completed.context["appointment"]["id"] == "appointment-1"
+    assert executor.calls == 1
