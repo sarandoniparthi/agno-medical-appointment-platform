@@ -15,6 +15,7 @@ class AgentRuntimeSettings(BaseSettings):
 
     http_port: int = Field(default=8000, alias="AGENT_HTTP_PORT")
     grpc_port: int = Field(default=50051, alias="AGENT_GRPC_PORT")
+    nest_internal_url: str = Field(default="http://127.0.0.1:3000", alias="NEST_INTERNAL_URL")
 
 
 class McpGatewaySettings(BaseSettings):
