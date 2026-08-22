@@ -7,6 +7,31 @@ The calendar is the product use case. The main technical lesson is how an LLM
 can understand a request and propose an action while deterministic application
 code, human approval, and database constraints retain control.
 
+## Application screenshots
+
+### Direct appointment scheduling
+
+Administrators can create an appointment with a conventional form when an
+agent is unnecessary. The same NestJS business rules and PostgreSQL constraints
+protect both direct and agent-assisted scheduling.
+
+![Direct appointment scheduling form](docs/images/admin-calendar.png)
+
+### Agent-assisted scheduling with human approval
+
+The scheduling agent turns a natural-language request into conflict-free
+candidates. It pauses before writing anything, allowing the administrator to
+approve one slot, request more options, or reject the proposal.
+
+![Scheduling agent approval candidates](docs/images/agent-approval-candidates.png)
+
+### Reschedule and cancellation actions
+
+Selecting an existing calendar entry exposes the administrator actions while
+keeping appointment context visible and explicit.
+
+![Appointment details with reschedule and cancellation actions](docs/images/appointment-actions.png)
+
 ## Start with one simple example
 
 Enter this in the **Scheduling agent** panel:
