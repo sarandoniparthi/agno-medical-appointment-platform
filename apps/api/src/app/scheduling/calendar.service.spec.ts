@@ -52,4 +52,24 @@ describe('CalendarService', () => {
       NotFoundException,
     );
   });
+
+  it('matches Bedrock-normalized specialties without case sensitivity', async () => {
+    const query = vi.fn().mockImplementation((sql: string, parameters: unknown[]) => {
+      const validSlotQuery = sql.includes('LOWER(d.specialty)=LOWER($2)')
+        && sql.includes('generate_series(9, 16)');
+      return Promise.resolve(validSlotQuery && parameters[1] === 'cardiology' ? [{
+        id: 'slot-1', doctor_id: 'doctor-1', doctor_display_name: 'Dr. Avery Shah',
+        clinic_id: 'clinic-1', clinic_name: 'North Loop Clinic',
+        clinic_timezone: 'America/Chicago', appointment_type_id: 'type-1',
+        appointment_type_name: 'Follow-up', start_at: new Date('2026-08-25T15:00:00Z'),
+        end_at: new Date('2026-08-25T15:30:00Z'),
+      }] : []);
+    });
+    const service = new CalendarService({ query } as unknown as DataSource);
+
+    const slots = await service.findOpenSlots({ specialty: 'cardiology' });
+
+    expect(slots).toHaveLength(1);
+    expect(slots[0]?.['doctor_display_name']).toBe('Dr. Avery Shah');
+  });
 });

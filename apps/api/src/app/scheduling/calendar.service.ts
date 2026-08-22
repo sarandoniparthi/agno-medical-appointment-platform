@@ -69,10 +69,12 @@ export class CalendarService {
         slot.start_at + (t.duration_minutes || ' minutes')::interval end_at
        FROM doctors d JOIN doctor_clinics dc ON dc.doctor_id=d.id JOIN clinics c ON c.id=dc.clinic_id
        CROSS JOIN LATERAL (SELECT * FROM appointment_types WHERE organization_id=$1 ORDER BY duration_minutes LIMIT 1) t
-       CROSS JOIN LATERAL generate_series(date_trunc('day', now()) + interval '1 day' + interval '9 hours',
-         date_trunc('day', now()) + interval '14 days' + interval '16 hours', interval '1 hour') slot(start_at)
+       CROSS JOIN LATERAL generate_series(date_trunc('day', now()) + interval '1 day',
+         date_trunc('day', now()) + interval '14 days', interval '1 day') day(slot_day)
+       CROSS JOIN LATERAL generate_series(9, 16) business_hour(hour_value)
+       CROSS JOIN LATERAL (SELECT day.slot_day + make_interval(hours => business_hour.hour_value) start_at) slot
        WHERE d.organization_id=$1 AND extract(isodow from slot.start_at) < 6
-         AND ($2::text IS NULL OR d.specialty=$2)
+         AND ($2::text IS NULL OR LOWER(d.specialty)=LOWER($2))
          AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.doctor_id=d.id AND a.status='scheduled'
            AND tstzrange(a.start_at,a.end_at,'[)') && tstzrange(slot.start_at,slot.start_at + (t.duration_minutes || ' minutes')::interval,'[)'))
        ORDER BY slot.start_at,d.display_name LIMIT 12`,
