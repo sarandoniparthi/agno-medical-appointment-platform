@@ -1,78 +1,132 @@
-# Agno Medical Appointment Platform
+# Agno Medical Appointment Scheduler
 
-An administrator-first medical appointment scheduling platform and reference
-architecture for building agentic applications with Agno. The target product
-helps clinic administrators search calendars, compare suitable appointments,
-review travel and weather context, approve an agent proposal, and schedule the
-appointment safely.
+An administrator-first reference application for learning how to build a safe
+agentic workflow with Agno, Amazon Bedrock, React, NestJS, and PostgreSQL.
 
-The implemented slice includes a seeded administrator calendar, conflict-safe
-create/reschedule/cancel operations, and an Agno workflow that proposes ranked
-slots and pauses for explicit human approval before NestJS performs a write.
-Weather/maps MCP tools, teams, and three-level memory remain future increments.
+The calendar is the product use case. The main technical lesson is how an LLM
+can understand a request and propose an action while deterministic application
+code, human approval, and database constraints retain control.
 
-## Architecture
+## Start with one simple example
 
-The project is an Nx monorepo containing:
-
-- `apps/web`: React and Vite web application.
-- `apps/api`: NestJS API, TypeORM integration, and private gRPC client.
-- `apps/agent-runtime`: Python FastAPI and asynchronous gRPC runtime for Agno.
-- `apps/mcp-gateway`: Python FastAPI boundary for approved external MCP tools.
-- `libs/database`: PostgreSQL configuration, entities, and explicit migrations.
-- `libs/contracts`: shared TypeScript contracts and privacy constants.
-- `libs/observability`: correlation identifiers and recursive PII redaction.
-- `libs/auth` and `libs/ui`: shared authentication and UI foundations.
-- `proto`: versioned NestJS-to-Python gRPC contracts.
-- `python/agno_platform`: shared Python settings, Bedrock model boundary,
-  generated contracts, privacy, and observability utilities.
-
-Runtime flow:
+Enter this in the **Scheduling agent** panel:
 
 ```text
-React web -> NestJS API -> gRPC -> FastAPI/Agno runtime
-                    |                    |
-                    v                    v
-          PostgreSQL + pgvector      MCP gateway
-                                      |       |
-                                   weather   maps
+Schedule Maya Carter with Cardiology
 ```
 
-NestJS owns authoritative appointment writes. External MCP providers must not
-access patient or appointment tables directly.
+The application performs this sequence:
 
-## Technology stack
+1. Amazon Bedrock converts the sentence into a strict Pydantic intent.
+2. The Agno workflow searches for exactly one patient.
+3. NestJS finds conflict-free cardiology openings.
+4. Deterministic code ranks and returns at most three candidates.
+5. The Agno-backed workflow pauses and persists an approval requirement.
+6. The administrator selects **Approve this slot**.
+7. NestJS re-reads and verifies the persisted approval over gRPC.
+8. A PostgreSQL transaction creates the appointment and audit record.
 
-- Nx, TypeScript, React 19, Vite, NestJS 11, and TypeORM 0.3
-- Python 3.12, FastAPI, Pydantic 2, Agno, Ruff, Pyright, and pytest
-- Protocol Buffers and gRPC between the NestJS and Python runtime boundaries
-- PostgreSQL with pgvector and pgcrypto (local server for current development)
-- Amazon Bedrock for model inference through Agno's Bedrock integration
-- Vitest for TypeScript and React tests; pytest for Python tests
+The model never writes directly to the appointment database.
+
+## What is implemented
+
+| Capability | Status |
+| --- | --- |
+| Seeded administrator calendar | Implemented |
+| Direct create, reschedule, and cancel dialogs | Implemented |
+| Bedrock structured scheduling intent | Implemented |
+| Conflict-free candidate generation | Implemented |
+| Deterministic candidate ranking | Implemented |
+| Persisted human approval | Implemented |
+| Verified, idempotent appointment mutation | Implemented |
+| Resumable workflow UI | Implemented |
+| Formal Agno `Workflow` subclass | Planned |
+| Doctor/date/clinic preference enforcement | Partial |
+| Read-only natural-language schedule queries | Planned |
+| Three-level memory | Planned |
+| Weather and maps MCP tools | Planned |
+| Agno Teams, knowledge, and evaluations | Planned |
+
+`Show me Dr. Jordan Lee's schedule` is not supported yet. Use the calendar's
+**Doctor** filter until the read-only `view_schedule` intent is added.
+
+## Architecture and ownership
+
+```text
+Browser / React
+      |
+      | HTTP /api
+      v
+NestJS API ----------------------> PostgreSQL
+      |                              appointments, rules,
+      | private gRPC                 audit, idempotency
+      v
+Python Agno runtime -------------> Agno PostgreSQL tables
+      |                              sessions, approvals
+      |
+      +----> Amazon Bedrock (model inference only)
+      |
+      +----> MCP gateway (weather/maps boundary; planned providers)
+```
+
+| Component | Responsibility |
+| --- | --- |
+| `apps/web` | Calendar, direct forms, workflow request and approval UI |
+| `apps/api` | Authoritative business rules, reads, transactions, and gRPC client |
+| `apps/agent-runtime` | Bedrock intent parsing and Agno workflow orchestration |
+| `apps/mcp-gateway` | Policy boundary for external MCP providers |
+| `libs/database` | TypeORM schemas, entities, and explicit migrations |
+| `libs/contracts` | Shared TypeScript and gRPC contracts |
+| `libs/observability` | Correlation identifiers and sensitive-field redaction |
+| `python/agno_platform` | Shared Python settings, Bedrock boundary, and generated gRPC code |
+| `proto` | Versioned NestJS-to-Python service contract |
+
+### Why this separation is useful
+
+- **Safer AI:** Bedrock interprets requests but cannot bypass business rules.
+- **Reliable writes:** NestJS and PostgreSQL enforce conflicts and transactions.
+- **Auditable HITL:** approval is durable before a mutation is attempted.
+- **Retry safety:** idempotency prevents duplicate appointments.
+- **Replaceable model:** business logic does not depend on one LLM provider.
+- **Independent scaling:** React, NestJS, and Python can run as separate pods.
+- **Typed boundaries:** Pydantic, TypeScript, and protobuf catch malformed data.
+
+For concept-by-concept examples and source paths, read the
+[feature learning guide](docs/feature-learning-guide.md).
+
+## Technology
+
+- Nx monorepo, TypeScript 5, React 19, Vite, NestJS 11
+- TypeORM 0.3 with explicit PostgreSQL migrations
+- Python 3.12, FastAPI, Pydantic 2, Agno, pytest, Ruff, and Pyright
+- Protocol Buffers and asynchronous gRPC for NestJS/Python communication
+- PostgreSQL with `pgcrypto`; pgvector is reserved for memory/knowledge work
+- Amazon Bedrock for model inference
+- Vitest for TypeScript/React and pytest for Python
 
 ## Prerequisites
 
-- Node.js 22.13 or newer in the Node 22 line, or Node 24
+- Node.js `>=22.13 <23` or Node.js 24
 - npm
-- Python 3.12
-- [uv](https://docs.astral.sh/uv/)
-- A local PostgreSQL server with the `vector` and `pgcrypto` extensions
-- AWS CLI/profile, SSO, or an IAM role only when exercising Bedrock
+- Python 3.12 and [uv](https://docs.astral.sh/uv/)
+- PostgreSQL running locally
+- AWS CLI profile, SSO session, or IAM role with Bedrock access
 
-The repository pins Node 22.13 in `.nvmrc` and enforces
-`>=22.13.0 <23 || >=24.0.0`.
+On Windows PowerShell, use `npm.cmd` if the `npm.ps1` execution-policy shim is
+blocked.
 
-## Initial setup
+## Install dependencies
 
-Run these commands from the repository root. On Windows PowerShell, use
-`npm.cmd` if the `npm.ps1` execution-policy shim is blocked.
+From the repository root:
 
 ```powershell
 npm.cmd install
 uv sync
 ```
 
-Create a root `.env` (local-only; never commit it) with at least:
+## Configure `.env`
+
+Create a root `.env`. It is local-only and must never be committed.
 
 ```dotenv
 DATABASE_URL=postgresql://postgres:123@localhost:5432/agnoagents
@@ -82,188 +136,165 @@ AGENT_HTTP_PORT=8000
 AGENT_GRPC_PORT=50051
 AGENT_GRPC_URL=127.0.0.1:50051
 NEST_INTERNAL_URL=http://127.0.0.1:3000
+MCP_GATEWAY_PORT=8010
 AWS_REGION=us-east-1
 AWS_PROFILE=dev_stg
+
+# Set exactly one of these two values.
 BEDROCK_MODEL_ID=
 BEDROCK_INFERENCE_PROFILE_ARN=
 ```
 
-## Environment variables
+Use exactly one of `BEDROCK_MODEL_ID` or
+`BEDROCK_INFERENCE_PROFILE_ARN`. AWS credentials must come from the ambient AWS
+profile, SSO session, workload identity, or IAM role. Never put access keys,
+secret keys, or session tokens in `.env`.
 
-The local `.env` configures these endpoints:
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | `localhost:5432/agnoagents` | NestJS, TypeORM, and Agno persistence |
-| `API_PORT` | `3000` | NestJS HTTP API |
-| `WEB_PORT` | `4200` | React development server |
-| `AGENT_HTTP_PORT` | `8000` | Agent runtime FastAPI server |
-| `AGENT_GRPC_PORT` | `50051` | Agent runtime gRPC server |
-| `AGENT_GRPC_URL` | `127.0.0.1:50051` | NestJS gRPC destination |
-| `MCP_GATEWAY_PORT` | `8010` | MCP gateway HTTP server |
-| `AWS_REGION` | `us-east-1` | Bedrock AWS Region |
-
-If `AGENT_GRPC_PORT` changes, update `AGENT_GRPC_URL` to match.
-
-### Bedrock configuration
-
-Set exactly one model reference in `.env`:
-
-```dotenv
-BEDROCK_MODEL_ID=your-enabled-model-id
-BEDROCK_INFERENCE_PROFILE_ARN=
-```
-
-or:
-
-```dotenv
-BEDROCK_MODEL_ID=
-BEDROCK_INFERENCE_PROFILE_ARN=your-inference-profile-id-or-arn
-```
-
-Never store AWS access keys, secret keys, or session tokens in `.env`. The
-runtime uses the ambient AWS provider chain, such as an AWS CLI profile or SSO
-session, an IAM role, or workload identity.
-
-For local AWS SSO usage:
+Example profile authentication:
 
 ```powershell
-aws sso login --profile YOUR_PROFILE
-$env:AWS_PROFILE = "YOUR_PROFILE"
+aws sso login --profile dev_stg
+aws sts get-caller-identity --profile dev_stg
 ```
 
-## Local PostgreSQL and pgvector
+## Prepare local PostgreSQL
 
-Current development uses PostgreSQL installed on localhost. Create the
-`agnoagents` database and enable the required extensions once:
+This checkout currently uses PostgreSQL on `localhost:5432`; Docker Compose is
+not required.
+
+Create the database and extensions once:
 
 ```powershell
 psql -U postgres -c "CREATE DATABASE agnoagents;"
-psql -U postgres -d agnoagents -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
-npm.cmd run db:migrate
+psql -U postgres -d agnoagents -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 ```
 
-The migration command loads the root `.env`. Configuration fails closed when
-`DATABASE_URL` is absent. TypeORM has `synchronize: false` and `migrationsRun:
-false`; schema changes use explicit migrations.
-
-Useful database commands:
+Run the explicit TypeORM migrations and deterministic demo seed:
 
 ```powershell
 npm.cmd run db:migrate
-npm.cmd run db:revert
 ```
 
-## Run the platform
+TypeORM uses `synchronize: false` and `migrationsRun: false`. Application startup
+does not change the schema automatically.
 
-Start each long-running service in a separate terminal from the repository
-root.
+## Run the application
 
-Agent runtime — starts FastAPI and gRPC together:
+Open three terminals at the repository root and start them in this order.
+
+Terminal 1 — FastAPI and gRPC Agno runtime:
 
 ```powershell
 npm.cmd exec nx -- serve agent-runtime
 ```
 
-MCP gateway:
-
-```powershell
-npm.cmd exec nx -- serve mcp-gateway
-```
-
-NestJS API:
+Terminal 2 — NestJS API:
 
 ```powershell
 npm.cmd exec nx -- serve api
 ```
 
-React web application:
+Terminal 3 — React UI:
 
 ```powershell
 npm.cmd exec nx -- serve web
 ```
 
-## Local endpoints
+The MCP gateway is optional until weather/maps providers are connected:
 
-| Service | URL |
-| --- | --- |
-| React | http://localhost:4200 |
-| NestJS health | http://localhost:3000/api/health |
-| NestJS readiness through Python gRPC | http://localhost:3000/api/ready |
-| Agent runtime health | http://localhost:8000/health |
-| MCP gateway health | http://localhost:8010/health |
+```powershell
+npm.cmd exec nx -- serve mcp-gateway
+```
 
-PowerShell health checks:
+## Verify the running services
 
 ```powershell
 Invoke-RestMethod http://localhost:8000/health
-Invoke-RestMethod http://localhost:8010/health
 Invoke-RestMethod http://localhost:3000/api/health
 Invoke-RestMethod http://localhost:3000/api/ready
 ```
 
-`/api/ready` succeeds only when the NestJS API can reach the Python gRPC
-runtime.
+Expected readiness includes `"agentRuntime":"serving"`.
 
-## Test the appointment workflow
+Open [http://localhost:4200](http://localhost:4200). If Vite reports that 4200
+is already occupied, use the URL it prints, such as `http://localhost:4201`.
 
-1. Open `http://localhost:4200` and confirm the seeded weekly calendar loads.
-2. In **Scheduling agent**, enter `Schedule Maya with cardiology next week`.
-3. Review the ranked candidates and choose **Approve this slot**. Approval is
-   persisted before NestJS revalidates it and performs the transaction.
-4. To modify an existing booking, ask `Reschedule appointment <id> next week`
-   or `Cancel appointment <id> because patient requested it`, then approve.
+## Prompts that work now
 
-Direct create, reschedule, and cancellation dialogs remain available as an
-administrative fallback.
+Create appointment candidates:
 
-## Development and verification
+```text
+Schedule Maya Carter with Cardiology
+Schedule Noah Williams with Family Medicine
+Schedule PT-1001 with Dermatology
+```
+
+Reschedule or cancel requires the appointment UUID:
+
+```text
+Reschedule appointment <appointment-id> to next week
+Cancel appointment <appointment-id> because the patient requested it
+```
+
+Current seeded reference data:
+
+- Patients: Maya Carter (`PT-1001`) and Noah Williams (`PT-1002`)
+- Dr. Avery Shah — Cardiology
+- Dr. Jordan Lee — Family Medicine
+- Dr. Morgan Diaz — Dermatology
+
+Patient and specialty are the most reliable natural-language constraints today.
+Doctor, clinic, appointment type, and date preferences are only partially
+enforced. Unsupported read-only requests should be treated as planned work, not
+as a capability of the current agent.
+
+## Run automated verification
 
 ```powershell
 npm.cmd run lint
 npm.cmd run test
 npm.cmd run build
 npm.cmd run verify
-npm.cmd run verify:compose
 ```
 
-Additional commands:
+Useful focused commands:
 
 ```powershell
-npm.cmd run proto:generate
-npm.cmd exec nx -- run api:test-artifact
+npm.cmd exec nx -- run api:test
+npm.cmd exec nx -- run web:test
+uv run pytest apps/agent-runtime/tests -q
 npm.cmd exec nx -- run agent-runtime:bedrock-smoke
 ```
 
-The Bedrock smoke test is opt-in and requires valid ambient AWS authentication
-and an enabled model or inference profile. It is not part of the standard test
-suite.
+The Bedrock smoke test invokes AWS and is intentionally excluded from the
+normal verification suite.
 
-## Current capabilities
+## Troubleshooting
 
-- Nx task orchestration for TypeScript and Python projects
-- React, NestJS, FastAPI, and MCP gateway application boundaries
-- Unified FastAPI and asynchronous gRPC runtime lifecycle
-- Versioned protobuf contract and deterministic generated Python bindings
-- NestJS gRPC deadlines, error mapping, readiness, and shutdown cleanup
-- Explicit TypeORM migration boundary with fail-closed configuration
-- Amazon Bedrock model construction through Agno without embedded credentials
-- Cross-language PII-sensitive key redaction and correlation IDs
-- Unit, integration, artifact, configuration, lint, type, and build checks
-- Seeded calendar, catalog, patient lookup, and appointment detail APIs
-- Transactional/idempotent create, reschedule, and cancellation operations
-- Bedrock-backed Agno intent parsing and ranked conflict-free candidates
-- Durable human approval and verified appointment mutation handoff
-- Resumable workflow controls in the administrator assistant panel
+### The UI returns HTTP 500 for a prompt
 
-## Planned application capabilities
+Check the Python runtime terminal first. A Pydantic validation error commonly
+means the request is not one of the currently supported intents. For example,
+`Show me Dr. Jordan Lee's schedule` needs the planned read-only intent.
 
-- Agno agents, teams, deterministic workflows, and structured outputs
-- Session state plus short-term, user-level, and organizational memory
-- PII/PHI redaction, policy guardrails, audit events, and authorization
-- Real-time run, tool, workflow, approval, and appointment events
-- Weather and maps MCP tools behind the policy gateway
-- Knowledge retrieval, evaluations, tracing, and operational dashboards
+### Bedrock says `aioboto3` is missing
 
-See the detailed [platform design](docs/superpowers/specs/2026-08-20-agno-medical-appointment-platform-design.md)
-and [local development guide](docs/development.md).
+Run `uv sync` and restart the Python runtime. Agno's asynchronous Bedrock path
+requires the locked `aioboto3` dependency.
+
+### `/api/ready` reports the runtime unavailable
+
+Confirm the Python runtime is running on `AGENT_GRPC_PORT` and that
+`AGENT_GRPC_URL` points to the same port.
+
+### PostgreSQL authentication fails
+
+Confirm the username, password, port, and `agnoagents` database in
+`DATABASE_URL`, then rerun `npm.cmd run db:migrate`.
+
+## More documentation
+
+- [Feature learning guide](docs/feature-learning-guide.md)
+- [Local development guide](docs/development.md)
+- [Appointment workflow design](docs/superpowers/specs/2026-08-22-appointment-workflow-design.md)
+- [Platform design](docs/superpowers/specs/2026-08-20-agno-medical-appointment-platform-design.md)
