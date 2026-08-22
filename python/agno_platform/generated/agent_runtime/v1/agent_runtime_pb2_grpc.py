@@ -40,12 +40,45 @@ class AgentRuntimeServiceStub:
                 request_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.HealthRequest.SerializeToString,
                 response_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.HealthResponse.FromString,
                 _registered_method=True)
+        self.StartSchedulingWorkflow = channel.unary_unary(
+                '/scheduler.agent_runtime.v1.AgentRuntimeService/StartSchedulingWorkflow',
+                request_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.StartSchedulingWorkflowRequest.SerializeToString,
+                response_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.FromString,
+                _registered_method=True)
+        self.GetSchedulingWorkflow = channel.unary_unary(
+                '/scheduler.agent_runtime.v1.AgentRuntimeService/GetSchedulingWorkflow',
+                request_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.GetSchedulingWorkflowRequest.SerializeToString,
+                response_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.FromString,
+                _registered_method=True)
+        self.RespondToSchedulingRequirement = channel.unary_unary(
+                '/scheduler.agent_runtime.v1.AgentRuntimeService/RespondToSchedulingRequirement',
+                request_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.RespondToSchedulingRequirementRequest.SerializeToString,
+                response_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.FromString,
+                _registered_method=True)
 
 
 class AgentRuntimeServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
     def CheckHealth(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StartSchedulingWorkflow(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetSchedulingWorkflow(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RespondToSchedulingRequirement(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -58,6 +91,21 @@ def add_AgentRuntimeServiceServicer_to_server(servicer, server):
                     servicer.CheckHealth,
                     request_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.HealthRequest.FromString,
                     response_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.HealthResponse.SerializeToString,
+            ),
+            'StartSchedulingWorkflow': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartSchedulingWorkflow,
+                    request_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.StartSchedulingWorkflowRequest.FromString,
+                    response_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.SerializeToString,
+            ),
+            'GetSchedulingWorkflow': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSchedulingWorkflow,
+                    request_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.GetSchedulingWorkflowRequest.FromString,
+                    response_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.SerializeToString,
+            ),
+            'RespondToSchedulingRequirement': grpc.unary_unary_rpc_method_handler(
+                    servicer.RespondToSchedulingRequirement,
+                    request_deserializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.RespondToSchedulingRequirementRequest.FromString,
+                    response_serializer=agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -87,6 +135,87 @@ class AgentRuntimeService:
             '/scheduler.agent_runtime.v1.AgentRuntimeService/CheckHealth',
             agent__runtime_dot_v1_dot_agent__runtime__pb2.HealthRequest.SerializeToString,
             agent__runtime_dot_v1_dot_agent__runtime__pb2.HealthResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StartSchedulingWorkflow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(  # pyright: ignore[reportAttributeAccessIssue]
+            request,
+            target,
+            '/scheduler.agent_runtime.v1.AgentRuntimeService/StartSchedulingWorkflow',
+            agent__runtime_dot_v1_dot_agent__runtime__pb2.StartSchedulingWorkflowRequest.SerializeToString,
+            agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetSchedulingWorkflow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(  # pyright: ignore[reportAttributeAccessIssue]
+            request,
+            target,
+            '/scheduler.agent_runtime.v1.AgentRuntimeService/GetSchedulingWorkflow',
+            agent__runtime_dot_v1_dot_agent__runtime__pb2.GetSchedulingWorkflowRequest.SerializeToString,
+            agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RespondToSchedulingRequirement(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(  # pyright: ignore[reportAttributeAccessIssue]
+            request,
+            target,
+            '/scheduler.agent_runtime.v1.AgentRuntimeService/RespondToSchedulingRequirement',
+            agent__runtime_dot_v1_dot_agent__runtime__pb2.RespondToSchedulingRequirementRequest.SerializeToString,
+            agent__runtime_dot_v1_dot_agent__runtime__pb2.WorkflowSnapshotResponse.FromString,
             options,
             channel_credentials,
             insecure,

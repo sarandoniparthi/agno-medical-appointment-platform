@@ -14,10 +14,13 @@ const contract = {
   packageName: 'scheduler.agent_runtime.v1',
   generatedModule: 'agno_platform.generated.agent_runtime.v1.agent_runtime_pb2',
   protoFile: 'proto/agent_runtime/v1/agent_runtime.proto',
-  requestType: 'HealthRequest',
-  responseType: 'HealthResponse',
   serviceName: 'AgentRuntimeService',
-  methodName: 'CheckHealth',
+  methods: [
+    ['CheckHealth', 'HealthRequest', 'HealthResponse'],
+    ['StartSchedulingWorkflow', 'StartSchedulingWorkflowRequest', 'WorkflowSnapshotResponse'],
+    ['GetSchedulingWorkflow', 'GetSchedulingWorkflowRequest', 'WorkflowSnapshotResponse'],
+    ['RespondToSchedulingRequirement', 'RespondToSchedulingRequirementRequest', 'WorkflowSnapshotResponse'],
+  ],
 };
 
 const outputRoot = resolve(
@@ -65,7 +68,18 @@ function renameWithRetry(source, destination) {
 }
 
 function renderGrpcTypeStub() {
-  const { methodName, requestType, responseType, serviceName } = contract;
+  const { methods, serviceName } = contract;
+  const importedTypes = [...new Set(methods.flatMap(([, request, response]) => [request, response]))].join(', ');
+  const callableTypes = methods.map(([method, request, response]) => `class _Sync${method}Callable(Protocol):
+    def __call__(self, request: ${request}, /, **kwargs: object) -> ${response}: ...
+
+
+class _Aio${method}Callable(Protocol):
+    def __call__(self, request: ${request}, /, **kwargs: object) -> grpc.aio.UnaryUnaryCall[${request}, ${response}]: ...`).join('\n\n\n');
+  const syncMembers = methods.map(([method]) => `    ${method}: _Sync${method}Callable`).join('\n');
+  const aioMembers = methods.map(([method]) => `    ${method}: _Aio${method}Callable`).join('\n');
+  const stubMembers = methods.map(([method]) => `    ${method}: _Sync${method}Callable | _Aio${method}Callable`).join('\n');
+  const servicerMethods = methods.map(([method, request, response]) => `    async def ${method}(self, request: ${request}, context: grpc.aio.ServicerContext[${request}, ${response}]) -> ${response}: ...`).join('\n\n');
 
   return `from __future__ import annotations
 
@@ -73,29 +87,21 @@ from typing import Protocol, overload
 
 import grpc
 
-from .agent_runtime_pb2 import ${requestType}, ${responseType}
+from .agent_runtime_pb2 import ${importedTypes}
 
-
-class _Sync${methodName}Callable(Protocol):
-    def __call__(self, request: ${requestType}, /, **kwargs: object) -> ${responseType}: ...
-
-
-class _Aio${methodName}Callable(Protocol):
-    def __call__(
-        self, request: ${requestType}, /, **kwargs: object
-    ) -> grpc.aio.UnaryUnaryCall[${requestType}, ${responseType}]: ...
+${callableTypes}
 
 
 class ${serviceName}SyncStub(Protocol):
-    ${methodName}: _Sync${methodName}Callable
+${syncMembers}
 
 
 class ${serviceName}AioStub(Protocol):
-    ${methodName}: _Aio${methodName}Callable
+${aioMembers}
 
 
 class ${serviceName}Stub:
-    ${methodName}: _Sync${methodName}Callable | _Aio${methodName}Callable
+${stubMembers}
 
     @overload
     def __init__(self, channel: grpc.aio.Channel) -> None: ...
@@ -104,41 +110,26 @@ class ${serviceName}Stub:
     def __init__(self, channel: grpc.Channel) -> None: ...
 
 
-class ${serviceName}SyncServicer(Protocol):
-    def ${methodName}(
-        self, request: ${requestType}, context: grpc.ServicerContext
-    ) -> ${responseType}: ...
-
-
 class ${serviceName}Servicer:
-    async def ${methodName}(
-        self,
-        request: ${requestType},
-        context: grpc.aio.ServicerContext[${requestType}, ${responseType}],
-    ) -> ${responseType}: ...
+${servicerMethods}
 
 
 def add_${serviceName}Servicer_to_server(
-    servicer: ${serviceName}SyncServicer | ${serviceName}Servicer,
+    servicer: ${serviceName}Servicer,
     server: grpc.Server | grpc.aio.Server,
 ) -> None: ...
 
-
-class ${serviceName}:
-    @staticmethod
-    def ${methodName}(
-        request: ${requestType},
-        target: str,
-        options: object = ...,
-        channel_credentials: grpc.ChannelCredentials | None = ...,
-        call_credentials: grpc.CallCredentials | None = ...,
-        insecure: bool = ...,
-        compression: grpc.Compression | None = ...,
-        wait_for_ready: bool | None = ...,
-        timeout: float | None = ...,
-        metadata: object = ...,
-    ) -> ${responseType}: ...
 `;
+}
+
+function replaceExpectedCount(source, expected, replacement, expectedCount, filePath) {
+  const occurrences = source.split(expected).length - 1;
+  if (occurrences !== expectedCount) {
+    throw new Error(
+      `Expected ${expectedCount} occurrences in ${filePath}, found ${occurrences}: ${expected}`,
+    );
+  }
+  return source.split(expected).join(replacement);
 }
 
 function writeStagedPackageInitializer() {
@@ -224,10 +215,11 @@ function validateAndPostprocessStagedFiles() {
     packageRelativeImport,
     grpcModulePath,
   );
-  const pyrightCompatibleGrpcModule = replaceExactly(
+  const pyrightCompatibleGrpcModule = replaceExpectedCount(
     `# pyright: basic\n${packageRelativeGrpcModule}`,
     'return grpc.experimental.unary_unary(',
     'return grpc.experimental.unary_unary(  # pyright: ignore[reportAttributeAccessIssue]',
+    contract.methods.length,
     grpcModulePath,
   );
 
