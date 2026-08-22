@@ -1,9 +1,15 @@
+import importlib.util
+
 import pytest
 from agno.models.aws import AwsBedrock
 from pydantic import ValidationError
 
 from agno_platform.models.bedrock import create_bedrock_model
 from agno_platform.settings import BedrockSettings
+
+
+def test_async_bedrock_runtime_dependency_is_installed() -> None:
+    assert importlib.util.find_spec("aioboto3") is not None
 
 
 @pytest.fixture(autouse=True)

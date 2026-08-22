@@ -25,19 +25,29 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$agent_runtime/v1/agent_runtime.proto\x12\x1ascheduler.agent_runtime.v1\"\'\n\rHealthRequest\x12\x16\n\x0e\x63orrelation_id\x18\x01 \x01(\t\"t\n\x0eHealthResponse\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x39\n\x06status\x18\x02 \x01(\x0e\x32).scheduler.agent_runtime.v1.ServingStatus\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t*k\n\rServingStatus\x12\x1e\n\x1aSERVING_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n\x16SERVING_STATUS_SERVING\x10\x01\x12\x1e\n\x1aSERVING_STATUS_NOT_SERVING\x10\x02\x32{\n\x13\x41gentRuntimeService\x12\x64\n\x0b\x43heckHealth\x12).scheduler.agent_runtime.v1.HealthRequest\x1a*.scheduler.agent_runtime.v1.HealthResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$agent_runtime/v1/agent_runtime.proto\x12\x1ascheduler.agent_runtime.v1\"\'\n\rHealthRequest\x12\x16\n\x0e\x63orrelation_id\x18\x01 \x01(\t\"t\n\x0eHealthResponse\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x39\n\x06status\x18\x02 \x01(\x0e\x32).scheduler.agent_runtime.v1.ServingStatus\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t\"N\n\x1eStartSchedulingWorkflowRequest\x12\x16\n\x0e\x63orrelation_id\x18\x01 \x01(\t\x12\x14\n\x0crequest_text\x18\x02 \x01(\t\"F\n\x1cGetSchedulingWorkflowRequest\x12\x16\n\x0e\x63orrelation_id\x18\x01 \x01(\t\x12\x0e\n\x06run_id\x18\x02 \x01(\t\"\xa8\x01\n%RespondToSchedulingRequirementRequest\x12\x16\n\x0e\x63orrelation_id\x18\x01 \x01(\t\x12\x0e\n\x06run_id\x18\x02 \x01(\t\x12\x41\n\x08response\x18\x03 \x01(\x0e\x32/.scheduler.agent_runtime.v1.RequirementResponse\x12\x14\n\x0cpayload_json\x18\x04 \x01(\t\"\x92\x01\n\x18WorkflowSnapshotResponse\x12\x16\n\x0e\x63orrelation_id\x18\x01 \x01(\t\x12\x13\n\x0bworkflow_id\x18\x02 \x01(\t\x12\x12\n\nsession_id\x18\x03 \x01(\t\x12\x0e\n\x06run_id\x18\x04 \x01(\t\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\x15\n\rsnapshot_json\x18\x06 \x01(\t*k\n\rServingStatus\x12\x1e\n\x1aSERVING_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n\x16SERVING_STATUS_SERVING\x10\x01\x12\x1e\n\x1aSERVING_STATUS_NOT_SERVING\x10\x02*\xc1\x01\n\x13RequirementResponse\x12$\n REQUIREMENT_RESPONSE_UNSPECIFIED\x10\x00\x12 \n\x1cREQUIREMENT_RESPONSE_APPROVE\x10\x01\x12\x1f\n\x1bREQUIREMENT_RESPONSE_REJECT\x10\x02\x12\x1d\n\x19REQUIREMENT_RESPONSE_EDIT\x10\x03\x12\"\n\x1eREQUIREMENT_RESPONSE_FIND_MORE\x10\x04\x32\xaf\x04\n\x13\x41gentRuntimeService\x12\x64\n\x0b\x43heckHealth\x12).scheduler.agent_runtime.v1.HealthRequest\x1a*.scheduler.agent_runtime.v1.HealthResponse\x12\x8b\x01\n\x17StartSchedulingWorkflow\x12:.scheduler.agent_runtime.v1.StartSchedulingWorkflowRequest\x1a\x34.scheduler.agent_runtime.v1.WorkflowSnapshotResponse\x12\x87\x01\n\x15GetSchedulingWorkflow\x12\x38.scheduler.agent_runtime.v1.GetSchedulingWorkflowRequest\x1a\x34.scheduler.agent_runtime.v1.WorkflowSnapshotResponse\x12\x99\x01\n\x1eRespondToSchedulingRequirement\x12\x41.scheduler.agent_runtime.v1.RespondToSchedulingRequirementRequest\x1a\x34.scheduler.agent_runtime.v1.WorkflowSnapshotResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'agno_platform.generated.agent_runtime.v1.agent_runtime_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SERVINGSTATUS']._serialized_start=227
-  _globals['_SERVINGSTATUS']._serialized_end=334
+  _globals['_SERVINGSTATUS']._serialized_start=699
+  _globals['_SERVINGSTATUS']._serialized_end=806
+  _globals['_REQUIREMENTRESPONSE']._serialized_start=809
+  _globals['_REQUIREMENTRESPONSE']._serialized_end=1002
   _globals['_HEALTHREQUEST']._serialized_start=68
   _globals['_HEALTHREQUEST']._serialized_end=107
   _globals['_HEALTHRESPONSE']._serialized_start=109
   _globals['_HEALTHRESPONSE']._serialized_end=225
-  _globals['_AGENTRUNTIMESERVICE']._serialized_start=336
-  _globals['_AGENTRUNTIMESERVICE']._serialized_end=459
+  _globals['_STARTSCHEDULINGWORKFLOWREQUEST']._serialized_start=227
+  _globals['_STARTSCHEDULINGWORKFLOWREQUEST']._serialized_end=305
+  _globals['_GETSCHEDULINGWORKFLOWREQUEST']._serialized_start=307
+  _globals['_GETSCHEDULINGWORKFLOWREQUEST']._serialized_end=377
+  _globals['_RESPONDTOSCHEDULINGREQUIREMENTREQUEST']._serialized_start=380
+  _globals['_RESPONDTOSCHEDULINGREQUIREMENTREQUEST']._serialized_end=548
+  _globals['_WORKFLOWSNAPSHOTRESPONSE']._serialized_start=551
+  _globals['_WORKFLOWSNAPSHOTRESPONSE']._serialized_end=697
+  _globals['_AGENTRUNTIMESERVICE']._serialized_start=1005
+  _globals['_AGENTRUNTIMESERVICE']._serialized_end=1564
 # @@protoc_insertion_point(module_scope)

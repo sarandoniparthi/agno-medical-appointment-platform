@@ -4,6 +4,9 @@ package scheduler.agent_runtime.v1;
 
 service AgentRuntimeService {
   rpc CheckHealth(HealthRequest) returns (HealthResponse);
+  rpc StartSchedulingWorkflow(StartSchedulingWorkflowRequest) returns (WorkflowSnapshotResponse);
+  rpc GetSchedulingWorkflow(GetSchedulingWorkflowRequest) returns (WorkflowSnapshotResponse);
+  rpc RespondToSchedulingRequirement(RespondToSchedulingRequirementRequest) returns (WorkflowSnapshotResponse);
 }
 
 message HealthRequest {
@@ -20,4 +23,38 @@ enum ServingStatus {
   SERVING_STATUS_UNSPECIFIED = 0;
   SERVING_STATUS_SERVING = 1;
   SERVING_STATUS_NOT_SERVING = 2;
+}
+
+message StartSchedulingWorkflowRequest {
+  string correlation_id = 1;
+  string request_text = 2;
+}
+
+message GetSchedulingWorkflowRequest {
+  string correlation_id = 1;
+  string run_id = 2;
+}
+
+enum RequirementResponse {
+  REQUIREMENT_RESPONSE_UNSPECIFIED = 0;
+  REQUIREMENT_RESPONSE_APPROVE = 1;
+  REQUIREMENT_RESPONSE_REJECT = 2;
+  REQUIREMENT_RESPONSE_EDIT = 3;
+  REQUIREMENT_RESPONSE_FIND_MORE = 4;
+}
+
+message RespondToSchedulingRequirementRequest {
+  string correlation_id = 1;
+  string run_id = 2;
+  RequirementResponse response = 3;
+  string payload_json = 4;
+}
+
+message WorkflowSnapshotResponse {
+  string correlation_id = 1;
+  string workflow_id = 2;
+  string session_id = 3;
+  string run_id = 4;
+  string status = 5;
+  string snapshot_json = 6;
 }

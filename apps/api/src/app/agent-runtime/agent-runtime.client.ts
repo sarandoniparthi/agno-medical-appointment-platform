@@ -25,6 +25,20 @@ interface RawAgentRuntimeHealthResponse {
   correlation_id: string;
 }
 
+interface RawWorkflowSnapshotResponse {
+  correlation_id: string;
+  workflow_id: string;
+  session_id: string;
+  run_id: string;
+  status: string;
+  snapshot_json: string;
+}
+
+type WorkflowCallback = (
+  error: grpc.ServiceError | null,
+  response?: RawWorkflowSnapshotResponse,
+) => void;
+
 export interface RawAgentRuntimeGrpcClient {
   CheckHealth(
     request: { correlation_id: string },
@@ -33,6 +47,16 @@ export interface RawAgentRuntimeGrpcClient {
       error: grpc.ServiceError | null,
       response?: RawAgentRuntimeHealthResponse,
     ) => void,
+  ): void;
+  StartSchedulingWorkflow(
+    request: { correlation_id: string; request_text: string }, callback: WorkflowCallback,
+  ): void;
+  GetSchedulingWorkflow(
+    request: { correlation_id: string; run_id: string }, callback: WorkflowCallback,
+  ): void;
+  RespondToSchedulingRequirement(
+    request: { correlation_id: string; run_id: string; response: number; payload_json: string },
+    callback: WorkflowCallback,
   ): void;
   close(): void;
 }
@@ -130,8 +154,48 @@ export class AgentRuntimeClient implements OnModuleDestroy {
     });
   }
 
+  startSchedulingWorkflow(requestText: string, correlationId: string): Promise<Record<string, unknown>> {
+    return this.workflowCall((callback) => this.client.StartSchedulingWorkflow(
+      { correlation_id: correlationId, request_text: requestText }, callback,
+    ));
+  }
+
+  getSchedulingWorkflow(runId: string, correlationId: string): Promise<Record<string, unknown>> {
+    return this.workflowCall((callback) => this.client.GetSchedulingWorkflow(
+      { correlation_id: correlationId, run_id: runId }, callback,
+    ));
+  }
+
+  respondToSchedulingRequirement(
+    runId: string, response: number, payload: Record<string, unknown>, correlationId: string,
+  ): Promise<Record<string, unknown>> {
+    return this.workflowCall((callback) => this.client.RespondToSchedulingRequirement(
+      { correlation_id: correlationId, run_id: runId, response, payload_json: JSON.stringify(payload) }, callback,
+    ));
+  }
+
   onModuleDestroy(): void {
     this.client.close();
+  }
+
+  private workflowCall(
+    invoke: (callback: WorkflowCallback) => void,
+  ): Promise<Record<string, unknown>> {
+    return new Promise((resolveWorkflow, rejectWorkflow) => {
+      invoke((error, response) => {
+        if (error !== null || response === undefined) {
+          rejectWorkflow(new AgentRuntimeUnavailableError(
+            error ? this.errorCode(error) : 'agent_runtime_unavailable',
+          ));
+          return;
+        }
+        try {
+          resolveWorkflow(JSON.parse(response.snapshot_json) as Record<string, unknown>);
+        } catch {
+          rejectWorkflow(new AgentRuntimeUnavailableError('agent_runtime_unavailable'));
+        }
+      });
+    });
   }
 
   private errorCode(error: grpc.ServiceError): AgentRuntimeErrorCode {

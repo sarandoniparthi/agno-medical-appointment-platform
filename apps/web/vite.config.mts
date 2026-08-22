@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: webPort,
       host: 'localhost',
+      proxy: { '/api': { target: `http://localhost:${env.API_PORT ?? 3000}` } },
     },
     preview: {
       port: webPort,

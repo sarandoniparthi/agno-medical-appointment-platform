@@ -1,26 +1,26 @@
 import { render } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 
 import App from './app';
+import type { SchedulingApi } from './scheduling/api';
+
+const pending = new Promise<never>(() => undefined);
+const api: SchedulingApi = {
+  listCalendar: vi.fn(() => pending),
+  getCatalog: vi.fn(() => pending),
+  searchPatients: vi.fn().mockResolvedValue([]),
+  createAppointment: vi.fn(),
+  rescheduleAppointment: vi.fn(),
+  cancelAppointment: vi.fn(),
+};
 
 describe('App', () => {
   it('should render successfully', () => {
-    const { baseElement } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>,
-    );
+    const { baseElement } = render(<App api={api} />);
     expect(baseElement).toBeTruthy();
   });
 
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>,
-    );
-    expect(
-      getAllByText(new RegExp('Welcome web', 'gi')).length > 0,
-    ).toBeTruthy();
+  it('shows the appointment operations workspace', () => {
+    const { getByText } = render(<App api={api} />);
+    expect(getByText('Appointment operations')).toBeTruthy();
   });
 });

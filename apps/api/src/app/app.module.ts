@@ -7,10 +7,12 @@ import {
 import { AgentRuntimeModule } from './agent-runtime/agent-runtime.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { SchedulingModule } from './scheduling/scheduling.module';
 
 @Module({
   imports: [
     AgentRuntimeModule,
+    SchedulingModule,
     TypeOrmModule.forRootAsync({
       useFactory: () =>
         createTypeOrmOptions(process.env.DATABASE_URL),
